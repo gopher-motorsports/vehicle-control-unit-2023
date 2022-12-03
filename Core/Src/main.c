@@ -41,7 +41,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-CAN_HandleTypeDef hcan1;
+CAN_HandleTypeDef hcan2;
+
+UART_HandleTypeDef huart1;
 
 /* Definitions for main_task */
 osThreadId_t main_taskHandle;
@@ -64,7 +66,8 @@ const osThreadAttr_t buffer_handling_attributes = {
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_CAN1_Init(void);
+static void MX_CAN2_Init(void);
+static void MX_USART1_UART_Init(void);
 void task_MainTask(void *argument);
 void task_BufferHandling(void *argument);
 
@@ -105,10 +108,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_CAN1_Init();
+  MX_CAN2_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  init(&hcan1);
+  init(&hcan2);
 
   /* USER CODE END 2 */
 
@@ -209,39 +213,72 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief CAN1 Initialization Function
+  * @brief CAN2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_CAN1_Init(void)
+static void MX_CAN2_Init(void)
 {
 
-  /* USER CODE BEGIN CAN1_Init 0 */
+  /* USER CODE BEGIN CAN2_Init 0 */
 
-  /* USER CODE END CAN1_Init 0 */
+  /* USER CODE END CAN2_Init 0 */
 
-  /* USER CODE BEGIN CAN1_Init 1 */
+  /* USER CODE BEGIN CAN2_Init 1 */
 
-  /* USER CODE END CAN1_Init 1 */
-  hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 5;
-  hcan1.Init.Mode = CAN_MODE_LOOPBACK;
-  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_6TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_1TQ;
-  hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = ENABLE;
-  hcan1.Init.AutoWakeUp = ENABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
-  hcan1.Init.ReceiveFifoLocked = DISABLE;
-  hcan1.Init.TransmitFifoPriority = DISABLE;
-  if (HAL_CAN_Init(&hcan1) != HAL_OK)
+  /* USER CODE END CAN2_Init 1 */
+  hcan2.Instance = CAN2;
+  hcan2.Init.Prescaler = 16;
+  hcan2.Init.Mode = CAN_MODE_NORMAL;
+  hcan2.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan2.Init.TimeSeg1 = CAN_BS1_1TQ;
+  hcan2.Init.TimeSeg2 = CAN_BS2_1TQ;
+  hcan2.Init.TimeTriggeredMode = DISABLE;
+  hcan2.Init.AutoBusOff = DISABLE;
+  hcan2.Init.AutoWakeUp = DISABLE;
+  hcan2.Init.AutoRetransmission = DISABLE;
+  hcan2.Init.ReceiveFifoLocked = DISABLE;
+  hcan2.Init.TransmitFifoPriority = DISABLE;
+  if (HAL_CAN_Init(&hcan2) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN CAN1_Init 2 */
+  /* USER CODE BEGIN CAN2_Init 2 */
 
-  /* USER CODE END CAN1_Init 2 */
+  /* USER CODE END CAN2_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -256,24 +293,68 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GRN_LED_GPIO_Port, GRN_LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : BUTTON_Pin */
-  GPIO_InitStruct.Pin = BUTTON_Pin;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, RTD_BUZZER_Pin|LED_RGB_R_Pin|LED_RGB_G_Pin|LED_RGB_B_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : BUTTON_Pin TS_SNS_1_Pin APPS1_FAULT_Pin APPS2_FAULT_Pin
+                           BRK_FAULT_Pin */
+  GPIO_InitStruct.Pin = BUTTON_Pin|TS_SNS_1_Pin|APPS1_FAULT_Pin|APPS2_FAULT_Pin
+                          |BRK_FAULT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BUTTON_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : GRN_LED_Pin */
-  GPIO_InitStruct.Pin = GRN_LED_Pin;
+  /*Configure GPIO pins : GPIO_1_Pin GPIO_2_Pin GPIO_3_Pin */
+  GPIO_InitStruct.Pin = GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GRN_LED_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : STATUS_LED_Pin GSENSE_LED_Pin HARDFAULT_LED_Pin */
+  GPIO_InitStruct.Pin = STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PUMP_PRESS_Pin APPS_1_Pin APPS_2_Pin */
+  GPIO_InitStruct.Pin = PUMP_PRESS_Pin|APPS_1_Pin|APPS_2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : BRK_PRES_Pin TS_SNS_FAULT_Pin SW_1_Pin SW_2_Pin
+                           SW_3_Pin */
+  GPIO_InitStruct.Pin = BRK_PRES_Pin|TS_SNS_FAULT_Pin|SW_1_Pin|SW_2_Pin
+                          |SW_3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RTD_BUZZER_Pin LED_RGB_R_Pin LED_RGB_G_Pin LED_RGB_B_Pin */
+  GPIO_InitStruct.Pin = RTD_BUZZER_Pin|LED_RGB_R_Pin|LED_RGB_G_Pin|LED_RGB_B_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : TS_BRK_FAULT_Pin */
+  GPIO_InitStruct.Pin = TS_BRK_FAULT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(TS_BRK_FAULT_GPIO_Port, &GPIO_InitStruct);
 
 }
 
@@ -295,7 +376,7 @@ void task_MainTask(void *argument)
   for(;;)
   {
 	  main_loop();
-    osDelay(10);
+	  osDelay(10);
   }
   /* USER CODE END 5 */
 }

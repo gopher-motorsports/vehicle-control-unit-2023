@@ -69,6 +69,9 @@ void main_loop()
 {
 	U8 button_state;
 
+	// Getting the inverter state
+	//service_can_rx_message();
+
 	// If the button is pressed send a can command to another to change the LED state
 	// To on or off depending on the button
 	button_state = HAL_GPIO_ReadPin(BUTTON_GPIO_Port, BUTTON_Pin);
@@ -96,7 +99,8 @@ void main_loop()
 //  correctly
 static void change_led_state(U8 sender, void* parameter, U8 remote_param, U8 UNUSED1, U8 UNUSED2, U8 UNUSED3)
 {
-	HAL_GPIO_WritePin(GRN_LED_GPIO_Port, GRN_LED_Pin, !!remote_param);
+	//HAL_GPIO_WritePin(GRN_LED_GPIO_Port, GRN_LED_Pin, !!remote_param);
+	HAL_GPIO_WritePin(GPIOA, STATUS_LED_Pin, !!remote_param);
 	return;
 }
 
@@ -108,7 +112,7 @@ void init_error(void)
 {
 	while (1)
 	{
-		HAL_GPIO_TogglePin(GRN_LED_GPIO_Port, GRN_LED_Pin);
+		HAL_GPIO_TogglePin(GPIOA, STATUS_LED_Pin);
 		HAL_Delay(250);
 	}
 }
