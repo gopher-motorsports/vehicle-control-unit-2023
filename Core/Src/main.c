@@ -112,7 +112,7 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  init(&hcan1);
+  init(&hcan2);
 
   /* USER CODE END 2 */
 
@@ -376,7 +376,7 @@ void task_MainTask(void *argument)
   for(;;)
   {
 	  main_loop();
-    osDelay(10);
+	  osDelay(10);
   }
   /* USER CODE END 5 */
 }
