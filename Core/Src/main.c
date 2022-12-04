@@ -292,53 +292,52 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin|PUMP_Pin
+                          |FAN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, RTD_BUZZER_Pin|LED_RGB_R_Pin|LED_RGB_G_Pin|LED_RGB_B_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : BUTTON_Pin TS_SNS_1_Pin APPS1_FAULT_Pin APPS2_FAULT_Pin
-                           BRK_FAULT_Pin */
-  GPIO_InitStruct.Pin = BUTTON_Pin|TS_SNS_1_Pin|APPS1_FAULT_Pin|APPS2_FAULT_Pin
-                          |BRK_FAULT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : GPIO_1_Pin GPIO_2_Pin GPIO_3_Pin */
-  GPIO_InitStruct.Pin = GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin;
+  /*Configure GPIO pins : GPIO_1_Pin GPIO_2_Pin GPIO_3_Pin PUMP_Pin
+                           FAN_Pin */
+  GPIO_InitStruct.Pin = GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin|PUMP_Pin
+                          |FAN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : STATUS_LED_Pin GSENSE_LED_Pin HARDFAULT_LED_Pin */
-  GPIO_InitStruct.Pin = STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin;
+  /*Configure GPIO pins : STATUS_LED_Pin GSENSE_LED_Pin HARDFAULT_LED_Pin BRK_LT_Pin */
+  GPIO_InitStruct.Pin = STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PUMP_PRESS_Pin APPS_1_Pin APPS_2_Pin */
-  GPIO_InitStruct.Pin = PUMP_PRESS_Pin|APPS_1_Pin|APPS_2_Pin;
+  /*Configure GPIO pins : PUMP_PRES_Pin APPS_1_Pin APPS_2_Pin TS_SNS_FAULT_Pin */
+  GPIO_InitStruct.Pin = PUMP_PRES_Pin|APPS_1_Pin|APPS_2_Pin|TS_SNS_FAULT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : BRK_PRES_Pin TS_SNS_FAULT_Pin SW_1_Pin SW_2_Pin
-                           SW_3_Pin */
-  GPIO_InitStruct.Pin = BRK_PRES_Pin|TS_SNS_FAULT_Pin|SW_1_Pin|SW_2_Pin
-                          |SW_3_Pin;
+  /*Configure GPIO pins : TS_SNS_1_Pin APPS1_FAULT_Pin APPS2_FAULT_Pin BRK_FAULT_Pin */
+  GPIO_InitStruct.Pin = TS_SNS_1_Pin|APPS1_FAULT_Pin|APPS2_FAULT_Pin|BRK_FAULT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : BRK_PRES_Pin SW_1_Pin SW_2_Pin SW_3_Pin */
+  GPIO_InitStruct.Pin = BRK_PRES_Pin|SW_1_Pin|SW_2_Pin|SW_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
