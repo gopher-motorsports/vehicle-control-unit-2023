@@ -65,7 +65,7 @@ void update_inverter_state() {
  */
 void update_tractive_system_state() {
 	// TODO: Manage tractive system state
-	// TODO: move send_torque command into this function?
+	// TODO: Move send_torque command into this function?
 }
 
 /**
@@ -82,6 +82,7 @@ void update_cooling() {
 void run_safety_checks() {
 	// TODO: APPS correlation check
 	// TODO: Braking/APPS check
+	// TODO: Sensor input checks (use pull-ups to validate BSPD functionality)
 }
 
 /**
