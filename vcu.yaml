@@ -7,17 +7,17 @@ buckets:
     high_frequency_vcu:
         frequency_hz: 250
         parameters:
-            # these must directly be a variable defined in GopherCAN
+            # These must directly be a variable defined in GopherCAN
             apps1:
-                ADC: ADC1_IN2
+                ADC: ADC1_IN6
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
             apps2:
-                ADC: ADC1_IN3
+                ADC: ADC1_IN7
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
             brake_pressure:
-                ADC: ADC2_IN2
+                ADC: ADC2_IN8
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
             
@@ -25,31 +25,62 @@ buckets:
         frequency_hz: 100
         parameters:
             water_pump_pressure:
-                ADC: ADC3_IN2
-                sensor: temp_sensor
-                samples_buffered: 1
-            tractive_system_braking_fault:
-                ADC: ADC3_IN2
-                sensor: temp_sensor
-                samples_buffered: 1
-            bspd_brake_pressure_sensor_fault:
-                ADC: ADC3_IN2
-                sensor: temp_sensor
-                samples_buffered: 1
-            bspd_apps1_fault:
-                ADC: ADC3_IN2
-                sensor: temp_sensor
-                samples_buffered: 1
-            bspd_apps2_fault:
-                ADC: ADC3_IN2
-                sensor: temp_sensor
-                samples_buffered: 1
-            bspd_tractive_system_current_sensor_fault:
-                ADC: ADC3_IN2
+                ADC: ADC1_IN5
                 sensor: temp_sensor
                 samples_buffered: 1
             
             # NON_ADC sensors means the value is produced somewhere in the main software then put into the GopherCAN value manually
+
+            # BSPD Faults
+            bspd_brake_pressure_sensor_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            bspd_apps1_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            bspd_apps2_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            bspd_tractive_system_current_sensor_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            bspd_tractive_system_braking_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+
+            # VCU Faults
+            vcu_brake_pressure_sensor_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            vcu_apps1_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            vcu_apps2_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            vcu_tractive_system_current_sensor_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            vcu_apps_correlation_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            vcu_apps_brake_fault:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            
+            # Other parameters
+
             vcu_status:
                 ADC: NON_ADC
                 sensor: NON_ADC
