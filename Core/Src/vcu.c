@@ -21,6 +21,7 @@ void init(CAN_HandleTypeDef* hcan_ptr) {
 
 	// Initialization code goes here
 	// TODO: Initialization code/functions
+	// TODO: Validate inverter config
 }
 
 void main_loop() {
@@ -66,6 +67,7 @@ void update_inverter_state() {
 void update_tractive_system_state() {
 	// TODO: Manage tractive system state
 	// TODO: Move send_torque command into this function?
+	// TODO: Check if brake is pressed for RTD functionality
 }
 
 /**
@@ -83,6 +85,7 @@ void run_safety_checks() {
 	// TODO: APPS correlation check
 	// TODO: Braking/APPS check
 	// TODO: Sensor input checks (use pull-ups to validate BSPD functionality)
+	// TODO: Clamp current draw if it is out of range for hard braking to prevent BSPD faults
 }
 
 /**
