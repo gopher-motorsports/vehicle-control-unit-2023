@@ -17,8 +17,12 @@ buckets:
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
             brake_pressure:
-                ADC: ADC2_IN8
+                ADC: ADC1_IN8
                 sensor: linear_pos_sensor_50
+                samples_buffered: 1
+            vcu_tractive_system_current:
+                ADC: ADC1_in14
+                sensor: current_sensor
                 samples_buffered: 1
             
     low_frequency_vcu:
