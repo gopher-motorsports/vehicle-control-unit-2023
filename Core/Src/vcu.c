@@ -8,12 +8,31 @@
 #include "vcu.h"
 #include "GopherCAN.h"
 
+#include "inverter_can.h"
+#include "cmsis_os.h"
+
 // The HAL_CAN struct
 CAN_HandleTypeDef* hcan;
 
 
 // Use this to define what module this board will be
 #define THIS_MODULE_ID VCU_ID
+
+
+//INTERNAL_STATES_t inv_states = {0};
+//CMD_CAN_t CAN_cmd =
+//{
+//		.torque_cmd = 0,
+//		.spd_cmd = 0,
+//		.dir_cmd = 0,
+//		.inverter_en = 0,
+//		.discharge_en = 0,
+//		.speed_en = 0,
+//		.torque_lim = MAX_TORQUE_Nm,
+//};
+//INV_RW_CMD_CAN_t rw_cmd = {0};
+//INV_CTRL_STATE_t inv_ctrl_state = INV_LOCKOUT;
+//extern CAN_HandleTypeDef hcan2;
 
 
 void init(CAN_HandleTypeDef* hcan_ptr) {
@@ -56,6 +75,10 @@ void can_buffer_handling_loop()
  * Manages the inverter state (lockout, configuration)
  */
 void update_inverter_state() {
+	//Updating inverter state
+	DRIVE_STATE_t curr_state = 0;
+	handle_inverter(&curr_state);
+
 	// TODO: Validate inverter configuration?
 	// TODO: Lockout mode state management
 	// TODO: What else needs to be done?

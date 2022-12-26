@@ -22,4 +22,9 @@ void update_brake_light();
 void send_torque_command();
 void update_driver_display();
 
+{
+	NOT_READY_STATE = 0,
+	READY_STATE = 1
+} DRIVE_STATE_t;
+
 #endif /* INC_VCU_H_ */
