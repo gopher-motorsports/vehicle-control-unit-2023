@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -57,10 +59,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define BUTTON_Pin GPIO_PIN_13
-#define BUTTON_GPIO_Port GPIOC
-#define OSC_Pin GPIO_PIN_0
-#define OSC_GPIO_Port GPIOH
+#define OSC_IN_Pin GPIO_PIN_0
+#define OSC_IN_GPIO_Port GPIOH
+#define OSC_OUT_Pin GPIO_PIN_1
+#define OSC_OUT_GPIO_Port GPIOH
 #define GPIO_1_Pin GPIO_PIN_1
 #define GPIO_1_GPIO_Port GPIOC
 #define GPIO_2_Pin GPIO_PIN_2
@@ -75,14 +77,14 @@ void Error_Handler(void);
 #define HARDFAULT_LED_GPIO_Port GPIOA
 #define PUMP_PRESS_Pin GPIO_PIN_5
 #define PUMP_PRESS_GPIO_Port GPIOA
-#define APPS_1_Pin GPIO_PIN_6
-#define APPS_1_GPIO_Port GPIOA
-#define APPS_2_Pin GPIO_PIN_7
-#define APPS_2_GPIO_Port GPIOA
+#define APPS1_Pin GPIO_PIN_6
+#define APPS1_GPIO_Port GPIOA
+#define APPS2_Pin GPIO_PIN_7
+#define APPS2_GPIO_Port GPIOA
 #define TS_SNS_1_Pin GPIO_PIN_4
 #define TS_SNS_1_GPIO_Port GPIOC
-#define BRK_PRES_Pin GPIO_PIN_0
-#define BRK_PRES_GPIO_Port GPIOB
+#define BRK_PRESS_Pin GPIO_PIN_0
+#define BRK_PRESS_GPIO_Port GPIOB
 #define RTD_BUZZER_Pin GPIO_PIN_1
 #define RTD_BUZZER_GPIO_Port GPIOB
 #define LED_RGB_R_Pin GPIO_PIN_12
@@ -91,8 +93,12 @@ void Error_Handler(void);
 #define LED_RGB_G_GPIO_Port GPIOB
 #define LED_RGB_B_Pin GPIO_PIN_14
 #define LED_RGB_B_GPIO_Port GPIOB
-#define TS_SNS_FAULT_Pin GPIO_PIN_15
-#define TS_SNS_FAULT_GPIO_Port GPIOB
+#define PUMP_Pin GPIO_PIN_6
+#define PUMP_GPIO_Port GPIOC
+#define FAN_Pin GPIO_PIN_7
+#define FAN_GPIO_Port GPIOC
+#define BRK_LT_Pin GPIO_PIN_8
+#define BRK_LT_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_9
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_10
@@ -101,6 +107,8 @@ void Error_Handler(void);
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
+#define TS_SNS_FAULT_Pin GPIO_PIN_15
+#define TS_SNS_FAULT_GPIO_Port GPIOA
 #define APPS1_FAULT_Pin GPIO_PIN_10
 #define APPS1_FAULT_GPIO_Port GPIOC
 #define APPS2_FAULT_Pin GPIO_PIN_11

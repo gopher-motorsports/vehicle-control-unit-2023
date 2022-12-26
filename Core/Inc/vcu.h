@@ -22,7 +22,6 @@ void update_brake_light();
 void send_torque_command();
 void update_driver_display();
 
-typedef enum
 {
 	NOT_READY_STATE = 0,
 	READY_STATE = 1

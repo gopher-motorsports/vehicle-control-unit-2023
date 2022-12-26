@@ -7,6 +7,7 @@
 
 #include "vcu.h"
 #include "GopherCAN.h"
+
 #include "inverter_can.h"
 #include "cmsis_os.h"
 
@@ -16,6 +17,7 @@ CAN_HandleTypeDef* hcan;
 
 // Use this to define what module this board will be
 #define THIS_MODULE_ID VCU_ID
+
 
 //INTERNAL_STATES_t inv_states = {0};
 //CMD_CAN_t CAN_cmd =
@@ -31,6 +33,7 @@ CAN_HandleTypeDef* hcan;
 //INV_RW_CMD_CAN_t rw_cmd = {0};
 //INV_CTRL_STATE_t inv_ctrl_state = INV_LOCKOUT;
 //extern CAN_HandleTypeDef hcan2;
+
 
 void init(CAN_HandleTypeDef* hcan_ptr) {
 	hcan = hcan_ptr;
