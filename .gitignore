@@ -1,2 +1,7 @@
+Release/
 Debug/*
-vehicle-control-unit-2023 Debug.launch
+
+*.launch
+
+.settings/
+.metadata/
