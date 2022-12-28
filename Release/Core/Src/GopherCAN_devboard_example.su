@@ -1,5 +1,0 @@
-../Core/Src/GopherCAN_devboard_example.c:100:13:change_led_state	0	static
-../Core/Src/GopherCAN_devboard_example.c:111:6:init_error	8	static
-../Core/Src/GopherCAN_devboard_example.c:25:6:init	8	static
-../Core/Src/GopherCAN_devboard_example.c:52:6:can_buffer_handling_loop	8	static
-../Core/Src/GopherCAN_devboard_example.c:68:6:main_loop	24	static
