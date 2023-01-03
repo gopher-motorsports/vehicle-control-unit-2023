@@ -6,6 +6,7 @@
  */
 
 #include "vcu.h"
+#include "main.h"
 #include "GopherCAN.h"
 
 // The HAL_CAN struct
@@ -62,7 +63,7 @@ void update_inverter_state() {
 }
 
 /**
- *
+ * Updates the state of the Tractive System
  */
 void update_tractive_system_state() {
 	// TODO: Manage tractive system state
@@ -71,15 +72,17 @@ void update_tractive_system_state() {
 }
 
 /**
- *
+ * Updates the cooling system on the car
  */
 void update_cooling() {
-	// TODO: Cooling system management
-
+	// TODO: Dynamic cooling system management
+	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, RESET);
+	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
 }
 
 /**
- *
+ * Responsible for sensor range checks, APPS correlation checks,
+ * and several other checks related to safety
  */
 void run_safety_checks() {
 	// TODO: APPS correlation check
@@ -89,22 +92,17 @@ void run_safety_checks() {
 }
 
 /**
- *
+ * Updates the state of the brake light based on the sensed brake pressure
  */
 void update_brake_light() {
 	// TODO: Control brake light output
+	int brake_pressure = 0;
+	HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, brake_pressure > 100 ? SET : RESET);
 }
 
 /**
- *
+ * Sends a torque command to the inverter
  */
 void send_torque_command() {
 	// TODO: CAN command with the inverter
-}
-
-/**
- *
- */
-void update_driver_display() {
-	//TODO: CAN communication with AEM CD-5 display
 }
