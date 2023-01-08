@@ -14,11 +14,11 @@ buckets:
                 ADC: ADC1_IN7
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
-            brakePressure_psi:
+            frontBrakePressure_psi:
                 ADC: ADC1_IN8
                 sensor: brake_pressure_sensor
                 samples_buffered: 1
-            tractiveSystemCurrent_A:
+            vcuTractiveSystemCurrent_A:
                 ADC: ADC1_IN14
                 sensor: current_sensor # TODO: Add current sensor to sensors.yaml
                 samples_buffered: 1
@@ -84,6 +84,41 @@ buckets:
             
             # Other parameters
 
+            coolantFanOn_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            coolantPumpOn_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+
+            switch1On_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            switch2On_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            switch3On_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+
+            gpio1_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            gpio2_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            gpio3_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+                
             vcuState_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
