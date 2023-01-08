@@ -2,102 +2,101 @@ module_name: "vcu"
 
 # NOTE: Frequencies will be converted to an integer number of ms for a delay
 
-
 buckets:
     high_frequency_vcu:
         frequency_hz: 250
         parameters:
-            # These must directly be a variable defined in GopherCAN
-            apps1:
+            pedalPosition1_mm:
                 ADC: ADC1_IN6
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
-            apps2:
+            pedalPosition2_mm:
                 ADC: ADC1_IN7
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
-            brake_pressure:
+            brakePressure_psi:
                 ADC: ADC1_IN8
-                sensor: linear_pos_sensor_50
+                sensor: brake_pressure_sensor
                 samples_buffered: 1
-            vcu_tractive_system_current:
-                ADC: ADC1_in14
-                sensor: current_sensor
+            tractiveSystemCurrent_A:
+                ADC: ADC1_IN14
+                sensor: current_sensor # TODO: Add current sensor to sensors.yaml
                 samples_buffered: 1
             
     low_frequency_vcu:
         frequency_hz: 100
         parameters:
-            water_pump_pressure:
+            coolantPumpPressure_psi:
                 ADC: ADC1_IN5
-                sensor: temp_sensor
+                sensor: pressure_sensor
                 samples_buffered: 1
             
-            # NON_ADC sensors means the value is produced somewhere in the main software then put into the GopherCAN value manually
+            # The following NON_ADC parameters are controlled entirely in
+            # software and not automatically populated by GopherSense
 
             # BSPD Faults
-            bspd_brake_pressure_sensor_fault:
+            bspdBrakePressureSensorFault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            bspd_apps1_fault:
+            bspdPedalPosition1Fault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            bspd_apps2_fault:
+            bapsPedalPosition2Fault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            bspd_tractive_system_current_sensor_fault:
+            bspdTractiveSystemCurrentSensorFault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            bspd_tractive_system_braking_fault:
+            bspdTractiveSystemBrakingFault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
 
             # VCU Faults
-            vcu_brake_pressure_sensor_fault:
+            vcuBrakePressureSensorFault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            vcu_apps1_fault:
+            vcuPedalPosition1Fault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            vcu_apps2_fault:
+            vcuPedalPosition2Fault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            vcu_tractive_system_current_sensor_fault:
+            vcuTractiveSystemCurrentSensorFault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            vcu_apps_correlation_fault:
+            vcuPedalPositionCorrelationFault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            vcu_apps_brake_fault:
+            vcuPedalPositionBrakingFault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
             
             # Other parameters
 
-            vcu_status:
+            vcuState_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            vcu_mcu_state:
+            vcuMcuStatus_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            brake_light:
+            brakeLightOn_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            currently_moving:
+            currentlyMoving_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
