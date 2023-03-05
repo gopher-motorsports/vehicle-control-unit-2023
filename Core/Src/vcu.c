@@ -8,6 +8,8 @@
 #include "vcu.h"
 #include "main.h"
 #include "GopherCAN.h"
+#include "inverter_can.h"
+#include "inverter_can.c"
 
 // The HAL_CAN struct
 CAN_HandleTypeDef* hcan;
@@ -23,16 +25,30 @@ void init(CAN_HandleTypeDef* hcan_ptr) {
 	// Initialization code goes here
 	// TODO: Initialization code/functions
 	// TODO: Validate inverter config
+
 }
 
 void main_loop() {
-	update_inverter_state();
-	update_tractive_system_state();
-	update_cooling();
-	run_safety_checks();
-	update_brake_light();
-	send_torque_command();
-	update_driver_display();
+	DRIVE_STATE_t *curr_state;
+
+	control_cooling();
+	handle_CAN();
+	handle_inputs();
+	brake_light();
+	handle_inv(curr_state);
+	handle_buzzer(curr_state);
+	// Main function
+	check_inv_lockout(curr_state);
+	check_RTD_button(curr_state);
+
+//  Old function setup, keeping them here just in case
+//	update_inverter_state();
+//	update_tractive_system_state();
+//	update_cooling();
+//	run_safety_checks();
+//	update_brake_light();
+//	send_torque_command();
+//	update_driver_display();
 }
 
 
@@ -52,6 +68,124 @@ void can_buffer_handling_loop()
 	service_can_tx_hardware(hcan);
 }
 
+void control_cooling() {
+	// TODO be smart about when turning on pump and fan
+	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_SET);
+
+	// TODO: Dynamic cooling system management
+}
+
+void handle_CAN() {
+
+}
+
+void handle_inputs() {
+
+}
+
+void brake_light() {
+
+}
+
+void handle_inv(DRIVE_STATE_t *curr_state) {
+	U8 msg_data[8];
+	U16 torque_req = 0;
+
+	//update_inv_state();
+
+	// find the state of the inverter based on the status of the ECU
+//	if (inv_states.inv_enable_lockout)
+//	{
+//		inv_ctrl_state = INV_LOCKOUT;
+//	}
+//	else if (!inv_states.inv_en_state)
+//	{
+//		// not locked out, not enabled
+//		inv_ctrl_state = INV_DISABLED;
+//
+//		// disable the state
+//		*curr_state = NOT_READY_STATE;
+//	}
+//	else
+//	{
+//		inv_ctrl_state = INV_ENABLED;
+//	}
+
+	// if the inverter is locked out, we must first disable and enable the motor
+	switch (*curr_state) {
+		case INV_LOCKOUT:
+			// send the disable then enable command with some delay
+			CAN_cmd.inverter_en = 0;
+			build_cmd_msg(msg_data, &CAN_cmd);
+			send_can_message(COMMAND_MSG_ID, 8, msg_data);
+
+			// also clear all faults when first starting up
+			rw_cmd.param_addr = FAULT_CLEAR;
+			rw_cmd.read_or_write = WRITE_CMD;
+			rw_cmd.data = 0;
+			build_param_cmd_msg(msg_data, &rw_cmd);
+			send_can_message(PARAM_RW_CMD_ID, 8, msg_data);
+			break;
+
+		case INV_DISABLED:
+			// try to enable the motor
+			if (*curr_state == INV_READY)
+			{
+				CAN_cmd.inverter_en = 1;
+				build_cmd_msg(msg_data, &CAN_cmd);
+				send_can_message(COMMAND_MSG_ID, 8, msg_data);
+			}
+			break;
+
+		case INV_ENABLED:
+			// actually run the motor
+
+			// calculate the torque we want from the motor. Right now we are linear
+			if (brakePressureRear_psi.data <= BRAKE_PRESSURE_BREAK_THRESH_psi)
+			{
+				// Old command was "float curr_pp = vcu_apps2.data;"
+				float curr_pp =pedalPosition2_mm.data;
+				if (curr_pp >= APPS2_MAX_TRAVEL_mm)
+				{
+					torque_req = MAX_TORQUE_Nm;
+				}
+				else if (curr_pp <= APPS2_MIN_TRAVEL_mm)
+				{
+					torque_req = 0;
+				}
+				else
+				{
+					// linearly interpolate
+					// TODO
+				}
+			}
+
+			CAN_cmd.torque_cmd = torque_req;
+			build_cmd_msg(msg_data, &CAN_cmd);
+			send_can_message(COMMAND_MSG_ID, 8, msg_data);
+			break;
+
+		default:
+			// not sure how we are here
+			inv_ctrl_state = INV_LOCKOUT;
+			break;
+		}
+}
+
+void handle_buzzer(DRIVE_STATE_t *curr_state) {
+
+}
+
+check_inv_lockout(DRIVE_STATE_t *curr_state) {
+
+}
+
+check_RTD_button(DRIVE_STATE_t *curr_state) {
+
+}
+
+//Old functions, keeping for now
 
 /**
  * Manages the inverter state (lockout, configuration)
@@ -76,8 +210,6 @@ void update_tractive_system_state() {
  */
 void update_cooling() {
 	// TODO: Dynamic cooling system management
-	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, RESET);
-	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
 }
 
 /**
@@ -105,4 +237,8 @@ void update_brake_light() {
  */
 void send_torque_command() {
 	// TODO: CAN command with the inverter
+}
+
+void update_driver_display() {
+
 }
