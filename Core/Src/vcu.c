@@ -174,7 +174,12 @@ void handle_inv(DRIVE_STATE_t *curr_state) {
 }
 
 void handle_buzzer(DRIVE_STATE_t *curr_state) {
-
+	// TODO: Check that the RTD button has been pressed
+	if(*curr_state == BUZZING) {
+		HAL_GPIO_WritePin(RTD_BUZZER_GPIO_Port, RTD_BUZZER_Pin, GPIO_PIN_SET);
+		// TODO: Not sure how to keep buzzer buzzing without sleep() which requires calling a library
+		HAL_GPIO_WritePin(RTD_BUZZER_GPIO_Port, RTD_BUZZER_Pin, GPIO_PIN_RESET);
+	}
 }
 
 check_inv_lockout(DRIVE_STATE_t *curr_state) {
