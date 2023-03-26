@@ -478,9 +478,13 @@ void task_MainTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+
+  // Setting up variables...
+  DRIVE_STATE_t* curr_state = INV_LCKOUT;
+
   for(;;)
   {
-	  main_loop();
+	  curr_state = main_loop(curr_state);
 	  osDelay(10);
   }
   /* USER CODE END 5 */

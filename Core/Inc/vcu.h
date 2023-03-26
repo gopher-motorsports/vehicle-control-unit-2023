@@ -20,7 +20,7 @@ typedef enum
 } DRIVE_STATE_t;
 
 void init(CAN_HandleTypeDef* hcan_ptr);
-void main_loop();
+DRIVE_STATE_t* main_loop(DRIVE_STATE_t* curr_state);
 void can_buffer_handling_loop();
 
 void control_cooling();

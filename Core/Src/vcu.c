@@ -28,9 +28,7 @@ void init(CAN_HandleTypeDef* hcan_ptr) {
 
 }
 
-void main_loop() {
-	DRIVE_STATE_t *curr_state;
-
+DRIVE_STATE_t* main_loop(DRIVE_STATE_t* curr_state) {
 	control_cooling();
 	handle_CAN();
 	handle_inputs();
@@ -40,6 +38,8 @@ void main_loop() {
 	// Main function
 	check_inv_lockout(curr_state);
 	check_RTD_button(curr_state);
+
+	return curr_state;
 
 //  Old function setup, keeping them here just in case
 //	update_inverter_state();
@@ -85,7 +85,9 @@ void handle_inputs() {
 }
 
 void brake_light() {
-
+//	if(HAL_GPIO_ReadPin(BRK_PRESS_GPIO_Port, BRK_PRESS_Pin) == GPIO_PIN_Set) {
+//		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, GPIO_PIN_RESET);
+//	}
 }
 
 void handle_inv(DRIVE_STATE_t *curr_state) {
@@ -177,17 +179,25 @@ void handle_buzzer(DRIVE_STATE_t *curr_state) {
 	// TODO: Check that the RTD button has been pressed
 	if(*curr_state == BUZZING) {
 		HAL_GPIO_WritePin(RTD_BUZZER_GPIO_Port, RTD_BUZZER_Pin, GPIO_PIN_SET);
-		// TODO: Not sure how to keep buzzer buzzing without sleep() which requires calling a library
+		// Not sure how many seconds a tick is
+		osDelay(5000);
 		HAL_GPIO_WritePin(RTD_BUZZER_GPIO_Port, RTD_BUZZER_Pin, GPIO_PIN_RESET);
 	}
 }
 
-check_inv_lockout(DRIVE_STATE_t *curr_state) {
+void check_inv_lockout(DRIVE_STATE_t *curr_state) {
+	if (*curr_state) {
 
+	}
 }
 
-check_RTD_button(DRIVE_STATE_t *curr_state) {
+void check_RTD_button(DRIVE_STATE_t *curr_state) {
+	// Forgot to assign a pin to the RTD button, using GPIO_1 for it
+	GPIO_PinState rtd_pressed = HAL_GPIO_ReadPin(GPIO_1_GPIO_Port, GPIO_1_Pin);
 
+	if(rtd_pressed == GPIO_PIN_SET) {
+
+	}
 }
 
 //Old functions, keeping for now
