@@ -70,8 +70,11 @@ void can_buffer_handling_loop()
 
 void control_cooling() {
 	// TODO be smart about when turning on pump and fan
-	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_SET);
+	if(brakeTempFrontLeft_C.data == 1 || brakeTempFrontRight_C.data == 1){
+		HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_SET);
+	}
+
 
 	// TODO: Dynamic cooling system management
 }
@@ -85,9 +88,21 @@ void handle_inputs() {
 }
 
 void brake_light() {
-//	if(HAL_GPIO_ReadPin(BRK_PRESS_GPIO_Port, BRK_PRESS_Pin) == GPIO_PIN_Set) {
-//		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, GPIO_PIN_RESET);
-//	}
+	// If brakePressureRear_psi.data is over 0, the brake is pressed
+	if(brakePressureRear_psi.data > 0) {
+		// If the brake light isn't on already, we need to turn it on
+		if (HAL_GPIO_ReadPin(BRK_LT_GPIO_Port, BRK_LT_Pin) == GPIO_PIN_RESET) {
+			HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, GPIO_PIN_SET);
+		}
+	}
+	// Else, the brake isn't pressed
+	else {
+		// If the brake light isn't pressed but the light is still on, we need to turn it off
+		if (HAL_GPIO_ReadPin(BRK_LT_GPIO_Port, BRK_LT_Pin) == GPIO_PIN_SET) {
+			HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, GPIO_PIN_RESET);
+		}
+	}
+	return;
 }
 
 void handle_inv(DRIVE_STATE_t *curr_state) {
@@ -193,9 +208,8 @@ void check_inv_lockout(DRIVE_STATE_t *curr_state) {
 
 void check_RTD_button(DRIVE_STATE_t *curr_state) {
 	// Forgot to assign a pin to the RTD button, using GPIO_1 for it
-	GPIO_PinState rtd_pressed = HAL_GPIO_ReadPin(GPIO_1_GPIO_Port, GPIO_1_Pin);
-
-	if(rtd_pressed == GPIO_PIN_SET) {
+	// HAL_GPIO_ReadPin will return 1 if the button is pressed
+	if (HAL_GPIO_ReadPin(GPIO_1_GPIO_Port, GPIO_1_Pin)) {
 
 	}
 }
