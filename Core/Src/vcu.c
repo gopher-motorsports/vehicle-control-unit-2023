@@ -246,10 +246,99 @@ void update_cooling() {
  * and several other checks related to safety
  */
 void run_safety_checks() {
-	// TODO: APPS correlation check
-	// TODO: Braking/APPS check
-	// TODO: Sensor input checks (use pull-ups to validate BSPD functionality)
-	// TODO: Clamp current draw if it is out of range for hard braking to prevent BSPD faults
+        //brake pressure / pedal pressure chek to see that both aren't being pushed
+		for(;;)
+		{
+			int pressure_sensor = 0;
+			int brake_pressure_sensor = 0;
+			brake_pressure_sensor.data;
+			if (brake_pressure_sensor >= 0){
+				pressure_sensor.data;
+				if (pressure_sensor >= 500) { //we still need to calculate this constant, 2000 was the highest psi value.
+					turn_inverter_off();
+					HAL_CAN_AddTxMessage(); //maybe tell the display this check failed or maybe flash led,
+				}
+				if (pressure_sensor < 500) {
+					osDelay(0);
+				}
+			}
+			else {
+				osDelay(0);
+			}
+
+		}
+
+		//APPS correlation check / plausibility check
+		for(;;)
+		{
+			break_pressure_rear.data;
+			pressure_sensor.data;
+			int brake_pressure_rear = 0;
+			int a = brake_pressure_rear;
+			int pressure_sensor = 0;
+			int b = pressure_sensor;
+			int c = 1;
+			//to make sure the the larger number is in the denominator
+			if (a > b);
+				c = ((a-b)/a) * 100;
+				if (c >= 10);
+					turn_off_inverter();
+				if (c < 10);
+					osDelay(0);
+
+			if (b > a);
+				c = ((b-a)/b) * 100;
+				if (c >= 10);
+					tunr_off_inverter();
+				if (c < 10);
+					turn_off_inverter();
+
+			if (a = b);
+				osDelay(0);
+
+
+		}
+
+		//AAPS short detection?
+		for (;;)
+		{
+			int a = apps_signal;
+			apps1.data;
+
+			if (apps_signal < 0.264);
+				send_torque_command = 0;
+			if (apps_signal > 3.04);
+				send_torque_command = 0;
+			else (void);
+				send_torque_command = 1;
+		}
+
+
+	    // BSE short check
+
+		for (;;)
+		{
+			int a = bse_signal;
+			bse1.data;
+
+			if (bse_signal < 0.264);
+				send_torque_command = 0; //use the boolean true statements for either
+			if (bse_signal > 3.2);
+				send_torque_command = 0;
+			else (void);
+				send_torque_comand = 1;
+		}
+		// Braking/Tractive System current check
+		for (;;)
+		{
+			int brake_pressure_rear;
+			if (brake_pressure_rear > 0); //change to account for error
+				ts_sns_1 = 0;
+			if (brake_pressure_rear < 0);
+				ts_sns_1 = 1;
+
+		}
+		}
 }
 
 /**
