@@ -416,8 +416,15 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, RTD_BUZZER_Pin|LED_RGB_R_Pin|LED_RGB_G_Pin|LED_RGB_B_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : GPIO_1_Pin GPIO_2_Pin GPIO_3_Pin PUMP_Pin */
-  GPIO_InitStruct.Pin = GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin|PUMP_Pin;
+  /*Configure GPIO pin : GPIO_1_Pin */
+  GPIO_InitStruct.Pin = GPIO_1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIO_1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : GPIO_2_Pin GPIO_3_Pin PUMP_Pin */
+  GPIO_InitStruct.Pin = GPIO_2_Pin|GPIO_3_Pin|PUMP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -480,11 +487,12 @@ void task_MainTask(void *argument)
   /* Infinite loop */
 
   // Setting up variables...
-  DRIVE_STATE_t* curr_state = INV_LCKOUT;
+  // Could use inverter state for this, can discuss
+  curr_state = INV_LOCKOUT_STATE;
 
   for(;;)
   {
-	  curr_state = main_loop(curr_state);
+	  main_loop();
 	  osDelay(10);
   }
   /* USER CODE END 5 */
