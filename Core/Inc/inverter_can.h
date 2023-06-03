@@ -11,8 +11,9 @@
 #include "base_types.h"
 //#include "main_task.h"
 #include "stdbool.h"
-#include "stm32f4xx_hal_conf.h"
 #include "stm32f4xx_it.h"
+
+#include "main.h"
 
 // pedal and pressure parameters
 #define APPS2_MIN_TRAVEL_mm 7

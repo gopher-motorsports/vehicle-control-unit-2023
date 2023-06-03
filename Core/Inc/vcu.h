@@ -14,7 +14,7 @@
 #define BRAKE_TEMP_THRESH 100
 #define MOTOR_TEMP_THRESH 100
 
-#include "stm32f4xx_hal.h"
+#include "main.h"
 
 typedef enum
 {
