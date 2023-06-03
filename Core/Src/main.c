@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "vcu.h"
+#include "inverter_can.h"
 
 /* USER CODE END Includes */
 

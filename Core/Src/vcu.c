@@ -9,7 +9,6 @@
 #include "main.h"
 #include "GopherCAN.h"
 #include "inverter_can.h"
-#include "inverter_can.c"
 
 // The HAL_CAN struct
 CAN_HandleTypeDef* hcan;
