@@ -185,10 +185,10 @@ void handle_inv() {
 
 void handle_buzzer() {
 	if(curr_state == BUZZING_STATE) {
-		HAL_GPIO_WritePin(RTD_BUZZER_GPIO_Port, RTD_BUZZER_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_SET);
 		// TODO: Figure out how many ticks five seconds is. 5000 is placeholder.
 		osDelay(5000);
-		HAL_GPIO_WritePin(RTD_BUZZER_GPIO_Port, RTD_BUZZER_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
 	}
 }
 
@@ -201,7 +201,7 @@ void check_inv_lockout() {
 void check_RTD_button() {
 	// Forgot to assign a pin to the RTD button, using GPIO_1 for it
 	// HAL_GPIO_ReadPin is a pull up pin, so it will return 0 if the button is pressed
-	if (!HAL_GPIO_ReadPin(GPIO_1_GPIO_Port, GPIO_1_Pin)) {
+	if (!HAL_GPIO_ReadPin(IO1_GPIO_Port, IO1_Pin)) {
 		//Button is pressed, set state to BUZZING_STATE
 		curr_state = BUZZING_STATE;
 	}
