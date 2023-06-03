@@ -408,30 +408,37 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin|PUMP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, IO1_Pin|IO2_Pin|IO3_Pin|PUMP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, MCU_STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, RTD_BUZZER_Pin|LED_RGB_R_Pin|LED_RGB_G_Pin|LED_RGB_B_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, BUZZER_Pin|STATUS_R_Pin|STATUS_G_Pin|STATUS_B_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : GPIO_1_Pin GPIO_2_Pin GPIO_3_Pin PUMP_Pin */
-  GPIO_InitStruct.Pin = GPIO_1_Pin|GPIO_2_Pin|GPIO_3_Pin|PUMP_Pin;
+  /*Configure GPIO pin : IO1_Pin */
+  GPIO_InitStruct.Pin = IO1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(IO1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : IO2_Pin IO3_Pin PUMP_Pin */
+  GPIO_InitStruct.Pin = IO2_Pin|IO3_Pin|PUMP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : STATUS_LED_Pin GSENSE_LED_Pin HARDFAULT_LED_Pin BRK_LT_Pin */
-  GPIO_InitStruct.Pin = STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin;
+  /*Configure GPIO pins : MCU_STATUS_LED_Pin GSENSE_LED_Pin HARDFAULT_LED_Pin BRK_LT_Pin */
+  GPIO_InitStruct.Pin = MCU_STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RTD_BUZZER_Pin LED_RGB_R_Pin LED_RGB_G_Pin LED_RGB_B_Pin */
-  GPIO_InitStruct.Pin = RTD_BUZZER_Pin|LED_RGB_R_Pin|LED_RGB_G_Pin|LED_RGB_B_Pin;
+  /*Configure GPIO pins : BUZZER_Pin STATUS_R_Pin STATUS_G_Pin STATUS_B_Pin */
+  GPIO_InitStruct.Pin = BUZZER_Pin|STATUS_R_Pin|STATUS_G_Pin|STATUS_B_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -455,8 +462,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(TS_BRK_FAULT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SW_1_Pin SW_2_Pin SW_3_Pin */
-  GPIO_InitStruct.Pin = SW_1_Pin|SW_2_Pin|SW_3_Pin;
+  /*Configure GPIO pins : SW1_Pin SW2_Pin ACC_FAN_Pin */
+  GPIO_InitStruct.Pin = SW1_Pin|SW2_Pin|ACC_FAN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -478,6 +485,11 @@ void task_MainTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+
+  // Setting up variables...
+  // Could use inverter state for this, can discuss
+  curr_state = INV_LOCKOUT_STATE;
+
   for(;;)
   {
 	  main_loop();

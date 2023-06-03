@@ -14,13 +14,13 @@ buckets:
                 ADC: ADC1_IN7
                 sensor: linear_pos_sensor_50
                 samples_buffered: 1
-            frontBrakePressure_psi:
+            brakePressureFront_psi:
                 ADC: ADC1_IN8
                 sensor: brake_pressure_sensor
                 samples_buffered: 1
             vcuTractiveSystemCurrent_A:
                 ADC: ADC1_IN14
-                sensor: current_sensor # TODO: Add current sensor to sensors.yaml
+                sensor: current_sensor_1
                 samples_buffered: 1
             
     low_frequency_vcu:
@@ -43,7 +43,7 @@ buckets:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            bapsPedalPosition2Fault_state:
+            bspdPedalPosition2Fault_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
@@ -81,14 +81,28 @@ buckets:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            
-            # Other parameters
-
-            coolantFanOn_state:
+            # If the VCU is clamping current to prevent a BSPD fault
+            vcuBrakingClampingCurrent_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            coolantPumpOn_state:
+            
+            
+            # Other parameters
+            vcuTorqueRequested_Nm:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+
+            coolantFanPower_percent:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            coolantPumpPower_percent:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            accumulatorFanPower_percent:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
@@ -101,24 +115,31 @@ buckets:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            switch3On_state:
-                ADC: NON_ADC
-                sensor: NON_ADC
-                samples_buffered: 1
 
-            gpio1_state:
+            io1_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            gpio2_state:
+            io2_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            gpio3_state:
+            
+            readyToDriveButton_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
                 
+            vcuTemp_C:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            
+            # State of the vehicle (Disabled, RTD, etc.)
+            vehicleState_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
             vcuState_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
@@ -131,9 +152,17 @@ buckets:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
+            vehicleBuzzerOn_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
             currentlyMoving_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-
-            # GSENSE status?
+            
+            # Gophersense heartbeat
+            vcuGSenseStatus_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
