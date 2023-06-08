@@ -1,24 +1,13 @@
 
 
-#include "inverter_can.h"
+#include <inverter.h>
 #include "cmsis_os.h"
 #include "GopherCAN.h"
 
 static void update_inv_state(void);
 static S8 send_can_message(U32 id, U8 dlc, U8* data);
 
-INTERNAL_STATES_t inv_states = {0};
-CMD_CAN_t CAN_cmd =
-{
-		.torque_cmd = 0,
-		.spd_cmd = 0,
-		.dir_cmd = 0,
-		.inverter_en = 0,
-		.discharge_en = 0,
-		.speed_en = 0,
-		.torque_lim = MAX_TORQUE_Nm,
-};
-INV_RW_CMD_CAN_t rw_cmd = {0};
+
 INV_CTRL_STATE_t inv_ctrl_state = INV_LOCKOUT;
 extern CAN_HandleTypeDef hcan2;
 
@@ -112,69 +101,6 @@ INV_CTRL_STATE_t get_inv_state(void)
 //		break;
 //	}
 //}
-
-
-static void update_inv_state(void)
-{
-	// read all of the internal states and fill in the structs
-	inv_states.vsm_state = vsmState_state.data;
-	inv_states.pwm_freq = pwmFreq_kHz.data;
-	inv_states.inverter_state = inverterState_state.data;
-	inv_states.relay_state = relayState_state.data;
-
-	inv_states.inverter_run_mode = !!(invStatesByte4_state.data & 0b00000001);
-	inv_states.inv_active_dis_state = (invStatesByte4_state.data & 0b01110000) >> 4;
-
-	inv_states.inv_cmd_mode = !!(invStatesByte5_state.data & 0b00000001);
-	inv_states.rolling_counter_val = (invStatesByte5_state.data & 0b01111000) >> 3;
-
-	inv_states.inv_en_state = !!(invStatesByte6_state.data & 0b00000001);
-	inv_states.start_mode_active = !!(invStatesByte6_state.data & 0b01000000);
-	inv_states.inv_enable_lockout = !!(invStatesByte6_state.data & 0b10000000);
-
-	inv_states.dir_cmd = !!(invStatesByte7_state.data & 0b00000001);
-	inv_states.bms_active = !!(invStatesByte7_state.data & 0b00000010);
-	inv_states.bms_limit_torque = !!(invStatesByte7_state.data & 0b00000100);
-	inv_states.limit_max_speed = !!(invStatesByte7_state.data & 0b00001000);
-	inv_states.limit_hot_spot = !!(invStatesByte7_state.data & 0b00010000);
-	inv_states.low_speed_limiting = !!(invStatesByte7_state.data & 0b00100000);
-	inv_states.coolant_temp_limiting = !!(invStatesByte7_state.data & 0b01000000);
-}
-
-
-// build_cmd_msg
-//  Builds the data U8[] based on the passed in cmd_struct
-void build_cmd_msg(U8* data, CMD_CAN_t* cmd_struct)
-{
-	// all data is stored in the message as low byte than high byte
-	data[0] = cmd_struct->torque_cmd & 0x00FF;
-	data[1] = (cmd_struct->torque_cmd & 0xFF00) >> 8;
-	data[2] = cmd_struct->spd_cmd & 0x00FF;
-	data[3] = (cmd_struct->spd_cmd & 0xFF00) >> 8;
-	data[4] = cmd_struct->dir_cmd;
-
-	data[5] = 0;
-	data[5] |= (cmd_struct->inverter_en ? 0x01 : 0x00);
-	data[5] |= (cmd_struct->discharge_en ? 0x02 : 0x00);
-	data[5] |= (cmd_struct->speed_en ? 0x04 : 0x00);
-
-	data[6] = cmd_struct->torque_lim & 0x00FF;
-	data[7] = (cmd_struct->torque_lim & 0xFF00) >> 8;
-}
-
-
-void build_param_cmd_msg(U8* data, INV_RW_CMD_CAN_t* read_cmd)
-{
-	data[0] = read_cmd->param_addr & 0x00FF;
-	data[1] = (read_cmd->param_addr & 0xFF00) >> 8;
-	data[2] = read_cmd->read_or_write;
-	data[3] = 0; // reserved
-	data[4] = read_cmd->data & 0x00FF;
-	data[5] = (read_cmd->data & 0xFF00) >> 8;
-	data[6] = 0; // reserved
-	data[7] = 0; // reserved
-}
-
 
 // send_can_message
 //  function to build a tx_header and add the message to the BXCan hardware
