@@ -28,7 +28,7 @@ buckets:
         parameters:
             coolantPumpPressure_psi:
                 ADC: ADC1_IN5
-                sensor: pressure_sensor
+                sensor: pressure_sensor_sealed_gauge
                 samples_buffered: 1
             
             # The following NON_ADC parameters are controlled entirely in
@@ -116,11 +116,11 @@ buckets:
                 sensor: NON_ADC
                 samples_buffered: 1
 
-            io1_state:
+            gpio1_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
-            io2_state:
+            gpio2_state:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1

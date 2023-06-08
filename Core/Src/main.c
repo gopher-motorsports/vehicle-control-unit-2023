@@ -408,7 +408,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, IO1_Pin|IO2_Pin|IO3_Pin|PUMP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO1_Pin|GPIO2_Pin|GPIO3_Pin|PUMP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, MCU_STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin, GPIO_PIN_RESET);
@@ -416,15 +416,15 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, BUZZER_Pin|STATUS_R_Pin|STATUS_G_Pin|STATUS_B_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : IO1_Pin */
-  GPIO_InitStruct.Pin = IO1_Pin;
+  /*Configure GPIO pin : GPIO1_Pin */
+  GPIO_InitStruct.Pin = GPIO1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(IO1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIO1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IO2_Pin IO3_Pin PUMP_Pin */
-  GPIO_InitStruct.Pin = IO2_Pin|IO3_Pin|PUMP_Pin;
+  /*Configure GPIO pins : GPIO2_Pin GPIO3_Pin PUMP_Pin */
+  GPIO_InitStruct.Pin = GPIO2_Pin|GPIO3_Pin|PUMP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -487,13 +487,12 @@ void task_MainTask(void *argument)
   /* Infinite loop */
 
   // Setting up variables...
-  // Could use inverter state for this, can discuss
-  curr_state = INV_LOCKOUT_STATE;
+  vehicle_state = VEHICLE_STARTUP;
 
   for(;;)
   {
 	  main_loop();
-	  osDelay(10);
+	  osDelay(1);
   }
   /* USER CODE END 5 */
 }
