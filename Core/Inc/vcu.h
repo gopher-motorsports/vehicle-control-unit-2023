@@ -121,18 +121,29 @@ typedef enum
 	VEHICLE_FAULT     = 5
 } VEHICLE_STATE_t;
 
+typedef enum {
+	NONE = 0,
+	RELEASE_PEDAL,
+	BREAKING_FAULT,
+	APPS_FAULT,
+	BSPD_FAULT,
+	AMS_FAULT,
+	IMD_FAULT,
+	VCU_FAULT
+} DISPLAY_FAULT_STATUS_t;
+
 extern VEHICLE_STATE_t vehicle_state;
 
 void init(CAN_HandleTypeDef* hcan_ptr);
 void main_loop();
 void can_buffer_handling_loop();
 
-// TODO: update internal CAN states
 void update_RTD();         // Ready to drive logic
 void process_sensors();    // Runs safety checks on driver inputs
 void update_gcan_states(); // Updates GopherCAN states
 void process_inverter();   // Updates vehicle state and applicable commands
 void update_outputs();     // Updates brake light and buzzer
 void update_cooling();     // Controls/updates the cooling system
+void update_display_fault_status(); 	// Check all vehicle fault messages and sends best one to display
 
 #endif /* INC_VCU_H_ */
