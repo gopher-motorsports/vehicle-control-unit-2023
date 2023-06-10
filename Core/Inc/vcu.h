@@ -10,6 +10,13 @@
 
 #include "main.h"
 
+
+// ========================================== CONSTANTS =========================================
+#define MATH_PI         3.14159265
+#define MATH_TAU        MATH_PI*2
+#define SECONDS_PER_MIN 60
+// ==============================================================================================
+
 // ======================================= APPS PARAMETERS ======================================
 #define APPS_MAX_POS_mm  20 // The position of the pedal at 100% torque
 #define APPS_MIN_POS_mm  10  // The position of the pedal at 0% torque
@@ -30,6 +37,7 @@
 #define PREDRIVE_BRAKE_THRESH_psi  100  // The minimum brake pressure to enter the driving state
 #define PREDRIVE_BUTTON_PRESSED    1    // The value of the button parameter when pressed
 #define PREDRIVE_TIME_ms           2000 // The length of predrive in ms
+#define RTD_BUTTON_PUSHED          GPIO_PIN_RESET
 // ==============================================================================================
 
 
@@ -120,9 +128,9 @@ void main_loop();
 void can_buffer_handling_loop();
 
 // TODO: update internal CAN states
-void update_gcan_states(); // Updates GopherCAN states
 void update_RTD();         // Ready to drive logic
 void process_sensors();    // Runs safety checks on driver inputs
+void update_gcan_states(); // Updates GopherCAN states
 void process_inverter();   // Updates vehicle state and applicable commands
 void update_outputs();     // Updates brake light and buzzer
 void update_cooling();     // Controls/updates the cooling system

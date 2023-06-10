@@ -26,6 +26,8 @@ uint16_t correlationTimer_ms = 0;
 
 boolean appsBrakeLatched_state = 0;
 
+boolean readyToDriveButtonPressed_state = 0;
+
 VEHICLE_STATE_t vehicle_state = VEHICLE_STARTUP;
 
 // Initialization code goes here
@@ -45,6 +47,9 @@ void main_loop() {
 	process_inverter();
 	update_outputs();
 	update_cooling();
+	update_gcan_states(); // Should be after process_sensors
+
+	// Turn off RGB
 	HAL_GPIO_WritePin(STATUS_R_GPIO_Port, STATUS_R_Pin, SET);
 	HAL_GPIO_WritePin(STATUS_G_GPIO_Port, STATUS_G_Pin, SET);
 	HAL_GPIO_WritePin(STATUS_B_GPIO_Port, STATUS_B_Pin, SET);
@@ -79,6 +84,25 @@ void update_gcan_states() {
 	// Log BSPD current/braking fault
 	update_and_queue_param_u8(&bspdTractiveSystemBrakingFault_state,
 			HAL_GPIO_ReadPin(BSPD_TS_BRK_FAULT_GPIO_Port, BSPD_TS_BRK_FAULT_Pin) == BSPD_TS_BRK_FAULT);
+	// VSC sensors faults
+	update_and_queue_param_u8(&vcuPedalPosition1Fault_state, apps1FaultTimer_ms > INPUT_TRIP_DELAY_ms);
+	update_and_queue_param_u8(&vcuPedalPosition2Fault_state, apps2FaultTimer_ms > INPUT_TRIP_DELAY_ms);
+	update_and_queue_param_u8(&vcuBrakePressureSensorFault_state, brakeSensorFaultTimer_ms > INPUT_TRIP_DELAY_ms);
+	update_and_queue_param_u8(&vcuTractiveSystemCurrentSensorFault_state, currentSensorFaultTimer_ms > INPUT_TRIP_DELAY_ms);
+	// VSC safety checks
+	update_and_queue_param_u8(&vcuPedalPositionCorrelationFault_state, correlationTimer_ms > CORRELATION_TRIP_DELAY_ms);
+	update_and_queue_param_u8(&vcuPedalPositionBrakingFault_state, appsBrakeLatched_state);
+	// Requested torque
+	update_and_queue_param_u8(&vcuTorqueRequested_Nm, desiredTorque_Nm);
+	// Cooling
+	update_and_queue_param_u8(&coolantFanPower_percent, 100*HAL_GPIO_ReadPin(FAN_GPIO_Port, FAN_Pin));
+	update_and_queue_param_u8(&coolantPumpPower_percent, 100*HAL_GPIO_ReadPin(PUMP_GPIO_Port, PUMP_Pin));
+	update_and_queue_param_u8(&accumulatorFanPower_percent, 100*HAL_GPIO_ReadPin(ACC_FAN_GPIO_Port, ACC_FAN_Pin));
+	// Vehicle state
+	update_and_queue_param_u8(&vehicleState_state, vehicle_state);
+	update_and_queue_param_u8(&readyToDriveButton_state, readyToDriveButtonPressed_state);
+
+	update_and_queue_param_u8(&vcuGSenseStatus_state, HAL_GPIO_ReadPin(GSENSE_LED_GPIO_Port, GSENSE_LED_Pin));
 }
 
 void update_cooling() {
@@ -159,20 +183,25 @@ void process_sensors() {
 
 	if(bspdTractiveSystemBrakingFault_state.data) {
 		float tractiveSystemBrakingLimit_Nm = 0;
+		float accumulatorVoltage_V = seg1Voltage_V.data +
+							seg2Voltage_V.data +
+							seg3Voltage_V.data +
+							seg4Voltage_V.data +
+							seg5Voltage_V.data +
+							seg6Voltage_V.data +
+							seg7Voltage_V.data;
 		if(motorSpeed_rpm.data != 0) {
-			tractiveSystemBrakingLimit_Nm = (BRAKE_TS_CURRENT_THRESH_A * (
-					seg1Voltage_V.data +
-					seg2Voltage_V.data +
-					seg3Voltage_V.data +
-					seg4Voltage_V.data +
-					seg5Voltage_V.data +
-					seg6Voltage_V.data +
-					seg7Voltage_V.data)) / (motorSpeed_rpm.data);
+			// Calculate max torque from speed and voltage, using angular velocity (rad/s)
+			tractiveSystemBrakingLimit_Nm = (BRAKE_TS_CURRENT_THRESH_A * accumulatorVoltage_V)
+					/ ((motorSpeed_rpm.data * MATH_TAU) / SECONDS_PER_MIN);
 		}
 		// If the tractive system braking limit is less (more restrictive),
 		// then set the torque limit to that amount
 		if(tractiveSystemBrakingLimit_Nm < torqueLimit_Nm) {
+			update_and_queue_param_u8(&vcuBrakingClampingCurrent_state, TRUE);
 			torqueLimit_Nm = tractiveSystemBrakingLimit_Nm;
+		} else {
+			update_and_queue_param_u8(&vcuBrakingClampingCurrent_state, FALSE);
 		}
 	}
 
@@ -181,8 +210,6 @@ void process_sensors() {
 	if(pedalPosition1_mm.data < APPS_MIN_POS_mm) {
 		desiredTorque_Nm = 0;
 	}
-
-	torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
 
 	if(desiredTorque_Nm > torqueLimit_Nm) {
 		desiredTorque_Nm = torqueLimit_Nm;
@@ -277,15 +304,19 @@ void check_ready_to_drive() {
 void update_outputs() {
 	if(vehicle_state == VEHICLE_PREDRIVE) {
 		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, BUZZER_ON);
+		update_and_queue_param_u8(&vehicleBuzzerOn_state, TRUE);
 	} else {
 		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, BUZZER_OFF);
+		update_and_queue_param_u8(&vehicleBuzzerOn_state, FALSE);
 	}
 
 	if(brakePressureFront_psi.data > BRAKE_LIGHT_THRESH_psi
 			|| brakePressureRear_psi.data > BRAKE_LIGHT_THRESH_psi) {
 		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, BRAKE_LIGHT_ON);
+		update_and_queue_param_u8(&brakeLightOn_state, TRUE);
 	} else {
 		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, BRAKE_LIGHT_OFF);
+		update_and_queue_param_u8(&brakeLightOn_state, FALSE);
 	}
 	return;
 }
@@ -297,9 +328,10 @@ void update_RTD() {
 			vehicle_state = VEHICLE_DRIVING;
 		}
 	}
+	readyToDriveButtonPressed_state = HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin) == RTD_BUTTON_PUSHED;
 	// Forgot to assign a pin to the RTD button, using GPIO_1 for it
 	// HAL_GPIO_ReadPin is a pull up pin, so it will return 0 if the button is pressed
-	if (!HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin)
+	if (readyToDriveButtonPressed_state
 			&& vehicle_state == VEHICLE_STANDBY
 			&& brakePressureFront_psi.data > PREDRIVE_BRAKE_THRESH_psi
 			&& brakePressureRear_psi.data > PREDRIVE_BRAKE_THRESH_psi) {
@@ -307,8 +339,4 @@ void update_RTD() {
 		vehicle_state = VEHICLE_PREDRIVE;
 		preDriveTimer_ms = 0;
 	}
-}
-
-void update_gcan_states() {
-
 }
