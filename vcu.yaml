@@ -134,6 +134,11 @@ buckets:
                 ADC: NON_ADC
                 sensor: NON_ADC
                 samples_buffered: 1
+
+            displayFaultStatus_state:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
             
             # State of the vehicle (Disabled, RTD, etc.)
             vehicleState_state:
