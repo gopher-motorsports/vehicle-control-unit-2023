@@ -89,9 +89,6 @@
 // for redundancy in the correlation  check mandated by rules
 // ============================================================
 
-#include "main.h"
-#include "gopher_sense.h"
-
 // This is the vehicle state which is affected both by the actions
 // of the driver and the current state of the inverter
 typedef enum
@@ -103,6 +100,8 @@ typedef enum
 	VEHICLE_DRIVING   = 4, // Torque commands are actively being sent from APPS positions
 	VEHICLE_FAULT     = 5
 } VEHICLE_STATE_t;
+
+#include "main.h"
 
 extern VEHICLE_STATE_t vehicle_state;
 

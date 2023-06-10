@@ -5,10 +5,7 @@
  *      Author: Ben Abbott
  */
 
-#include "inverter.h"
 #include "vcu.h"
-#include "main.h"
-#include "GopherCAN.h"
 #include "gopher_sense.h"
 #include <stdlib.h>
 
@@ -27,7 +24,9 @@ uint16_t currentSensorFaultTimer_ms = 0;
 
 uint16_t correlationTimer_ms = 0;
 
-bool appsBrakeLatched_state = 0;
+boolean appsBrakeLatched_state = 0;
+
+VEHICLE_STATE_t vehicle_state = VEHICLE_STARTUP;
 
 // Initialization code goes here
 void init(CAN_HandleTypeDef* hcan_ptr) {
@@ -131,9 +130,9 @@ void run_safety_checks() {
 	// APPS/Braking Check
 	if((brakePressureFront_psi.data > APPS_BRAKE_PRESS_THRESH_psi
 			&& pedalPosition1_mm.data > APPS_BRAKE_APPS1_THRESH_mm)) {
-		appsBrakeLatched_state = true;
+		appsBrakeLatched_state = TRUE;
 	} else if (pedalPosition1_mm.data <= APPS_BRAKE_RESET_THRESH_mm) {
-		appsBrakeLatched_state = false;
+		appsBrakeLatched_state = FALSE;
 	}
 
 	if(appsBrakeLatched_state) {
