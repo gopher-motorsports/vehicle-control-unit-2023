@@ -46,9 +46,8 @@ void main_loop() {
 	process_inverter();
 	update_outputs();
 	update_cooling();
+	update_display_fault_status();
 }
-
-
 
 /**
  * Services the CAN RX and TX hardware task
@@ -140,6 +139,27 @@ void run_safety_checks() {
 	if(appsBrakeLatched_state) {
 		torqueLimit_Nm = 0;
 	}
+}
+
+void update_display_fault_status() {
+	int status = NONE;
+	if(amsFault_state.data) status = AMS_FAULT;
+	//else if(bmsFault_state.data) status = BMS_FAULT;
+	else if(vcuPedalPositionBrakingFault_state.data) status = RELEASE_PEDAL;
+	else if(bspdTractiveSystemBrakingFault_state.data || vcuBrakingClampingCurrent_state.data) status = BREAKING_FAULT;
+	else if(vcuPedalPositionCorrelationFault_state.data) status = APPS_FAULT;
+	else if(bspdFault_state.data
+			|| bspdBrakePressureSensorFault_state.data
+			|| bspdPedalPosition1Fault_state.data
+			|| bspdPedalPosition2Fault_state.data
+			|| bspdTractiveSystemCurrentSensorFault_state.data
+			) status = BSPD_FAULT;
+	else if(vcuBrakePressureSensorFault_state.data
+			|| vcuPedalPosition2Fault_state.data
+			|| vcuTractiveSystemCurrentSensorFault_state.data
+			) status = VCU_FAULT;
+
+	update_and_queue_param_u8(&displayFaultStatus_state, status);
 }
 
 
