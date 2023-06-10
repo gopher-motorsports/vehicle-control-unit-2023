@@ -8,11 +8,11 @@ buckets:
         parameters:
             pedalPosition1_mm:
                 ADC: ADC1_IN6
-                sensor: linear_pos_sensor_50
+                sensor: linear_pos_sensor_25
                 samples_buffered: 1
             pedalPosition2_mm:
                 ADC: ADC1_IN7
-                sensor: linear_pos_sensor_50
+                sensor: linear_pos_sensor_25
                 samples_buffered: 1
             brakePressureFront_psi:
                 ADC: ADC1_IN8
