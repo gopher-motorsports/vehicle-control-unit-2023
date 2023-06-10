@@ -32,7 +32,7 @@
 #define TS_CURRENT_MAX_A   85  // The maximum value of the current sensor
 // ==============================================================================================
 
-// ======================================= RTD PARAMETERS =======================================
+// ================================== READY TO DRIVE PARAMETERS =================================
 #define PREDRIVE_BRAKE_THRESH_psi   100 // The minimum brake pressure to enter the driving state
 // ==============================================================================================
 
@@ -45,13 +45,13 @@
 // This check is done using APPS1 (since APPS1 determines the applied torque) and the BSE
 #define APPS_BRAKE_PRESS_THRESH_psi  50  // The minimum amount of brake pressure that will trip
 // The minimum APPS position that will trip the APPS/Brake check
-#define APPS_BRAKE_APPS1_THRESH_mm   ( APPS_TOTAL_TRAVEL * 0.25 ) + APPS_MIN_POS_mm
+#define APPS_BRAKE_APPS1_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.25 ) + APPS_MIN_POS_mm
 // The maximum APPS position that will reset the APPS/Brake check
-#define APPS_BRAKE_RESET_THRESH_mm   ( APPS_TOTAL_TRAVEL * 0.05 ) + APPS_MIN_POS_mm
+#define APPS_BRAKE_RESET_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.05 ) + APPS_MIN_POS_mm
 
 // ------------------------------------ APPS Correlation Check ----------------------------------
-#define APPS_CORRELATION_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.1 )
-#define CORRELATION_TRIP_DELAY_ms 100  // The amount of time it takes a correlation fault to take effect
+#define APPS_CORRELATION_THRESH_mm  ( APPS_TOTAL_TRAVEL_mm * 0.1 )
+#define CORRELATION_TRIP_DELAY_ms    100  // The amount of time it takes a correlation fault to take effect
 
 // ------------------------------------ TS Current/Brake Check ----------------------------------
 #define BRAKE_TS_POWER_THRESH_W    5000
@@ -70,16 +70,20 @@
 
 // ================================== TRACTIVE SYSTEM PARAMETERS ================================
 #define MOTOR_DIRECTION           1    // Motor direction; 0 is reverse, 1 is forward
-#define MAX_CMD_TORQUE_Nm         150  // The maximum torque the
+#define MAX_CMD_TORQUE_Nm         150  // The maximum torque that will be commanded
 #define INVERTER_TIMEOUT_ms       100  // The time after which the vehicle state will be STARTUP
 #define INVERTER_ENABLE           0x01 // Flags to enable the inverter
 #define INVERTER_DISABLE          0x00 // Flags to disable the inverter
 #define INVERTER_LOCKOUT          0x40 // Lockout is bit 7 of byte 6
 // ==============================================================================================
 
+// =================== THROTTLE CALCULATION ===================
+// Throttle is calculated using APPS1 with APPS2 being used
+// for redundancy in the correlation  check mandated by rules
+// ============================================================
 
 #include "main.h"
-
+#include "gopher_sense.h"
 
 // This is the vehicle state which is affected both by the actions
 // of the driver and the current state of the inverter
@@ -99,10 +103,10 @@ void init(CAN_HandleTypeDef* hcan_ptr);
 void main_loop();
 void can_buffer_handling_loop();
 
-void update_cooling();    // Controls/updates the cooling system
-void run_safety_checks(); // Runs safety checks on driver inputs
-void update_outputs();    // Updates brake light and buzzer
-void process_inverter();  // Updates vehicle state and applicable commands
-void check_RTD_button();  //
+void update_cooling();       // Controls/updates the cooling system
+void run_safety_checks();    // Runs safety checks on driver inputs
+void update_outputs();       // Updates brake light and buzzer
+void process_inverter();     // Updates vehicle state and applicable commands
+void check_ready_to_drive(); // Checks if we're good to enter the driving state
 
 #endif /* INC_VCU_H_ */

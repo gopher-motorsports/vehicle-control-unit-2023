@@ -27,7 +27,7 @@ uint16_t currentSensorFaultTimer_ms = 0;
 
 uint16_t correlationTimer_ms = 0;
 
-
+bool appsBrakeLatched_state = 0;
 
 // Initialization code goes here
 void init(CAN_HandleTypeDef* hcan_ptr) {
@@ -41,11 +41,11 @@ void init(CAN_HandleTypeDef* hcan_ptr) {
 }
 
 void main_loop() {
-	update_cooling();
+	check_ready_to_drive();
 	run_safety_checks();
 	process_inverter();
 	update_outputs();
-	check_RTD_button();
+	update_cooling();
 }
 
 
@@ -84,6 +84,8 @@ void update_cooling() {
 }
 
 void run_safety_checks() {
+	torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
+
 	// Input Validation Checks
 	if(pedalPosition1_mm.data > APPS_MAX_POS_mm
 			|| pedalPosition1_mm.data < APPS_MIN_POS_mm) {
@@ -119,11 +121,23 @@ void run_safety_checks() {
 	// Correlation Check
 	if(pedalPosition1_mm.data - pedalPosition2_mm.data > APPS_CORRELATION_THRESH_mm
 			|| pedalPosition2_mm.data - pedalPosition1_mm.data > APPS_CORRELATION_THRESH_mm) {
-		correlationTimer_ms = (correlationTimer_ms > CORRELATION_TRIP_DELAY_ms) ? correlationTimer_ms : ++correlationTimer_ms;
+		correlationTimer_ms = (correlationTimer_ms > CORRELATION_TRIP_DELAY_ms) ? CORRELATION_TRIP_DELAY_ms + 1 : currentSensorFaultTimer_ms + 1;
 	} else {
 		correlationTimer_ms = 0;
 	}
 	if(correlationTimer_ms > CORRELATION_TRIP_DELAY_ms) {
+		torqueLimit_Nm = 0;
+	}
+
+	// APPS/Braking Check
+	if((brakePressureFront_psi.data > APPS_BRAKE_PRESS_THRESH_psi
+			&& pedalPosition1_mm.data > APPS_BRAKE_APPS1_THRESH_mm)) {
+		appsBrakeLatched_state = true;
+	} else if (pedalPosition1_mm.data <= APPS_BRAKE_RESET_THRESH_mm) {
+		appsBrakeLatched_state = false;
+	}
+
+	if(appsBrakeLatched_state) {
 		torqueLimit_Nm = 0;
 	}
 }
@@ -147,28 +161,23 @@ void process_inverter() {
 		update_and_queue_param_float(&torqueCmd_Nm, desiredTorque_Nm);
 		update_and_queue_param_float(&speedCmd_rpm, 0);
 		update_and_queue_param_u8(&cmdDir_state, (U8)(MOTOR_DIRECTION > 0));
-		update_and_queue_param_u8(&invCmdFlags_state, INVERTER_CMD_FLAGS);
+		update_and_queue_param_u8(&invCmdFlags_state, INVERTER_ENABLE);
 		update_and_queue_param_float(&torqueCmdLim_Nm, MAX_CMD_TORQUE_Nm);
-	} else if(vehicle_state == VEHICLE_LOCKOUT) {
-		// If we're in lockout, disable the inverter
-		if(!(invStatesByte6_state.data & INVERTER_LOCKOUT_BIT)) {
-			// Disable the inverter to exit lockout
-			update_and_queue_param_float(&torqueCmd_Nm, desiredTorque_Nm);
-			update_and_queue_param_float(&speedCmd_rpm, 0);
-			update_and_queue_param_u8(&cmdDir_state, (U8)(MOTOR_DIRECTION > 0));
-			update_and_queue_param_u8(&invCmdFlags_state, INVERTER_CMD_FLAGS);
-			update_and_queue_param_float(&torqueCmdLim_Nm, MAX_CMD_TORQUE_Nm);
-		} else {
-			// We've exited lockout
-			vehicle_state = VEHICLE_STANDBY;
-		}
+		service_can_tx(hcan);
 	} else {
-		// Tell the inverter we don't
+		// Tell the inverter we don't want the motor to spin
+		// This will also exit lockout
 		update_and_queue_param_float(&torqueCmd_Nm, 0);
 		update_and_queue_param_float(&speedCmd_rpm, 0);
 		update_and_queue_param_u8(&cmdDir_state, (U8)(MOTOR_DIRECTION > 0));
-		update_and_queue_param_u8(&invCmdFlags_state, INVERTER_CMD_FLAGS);
+		update_and_queue_param_u8(&invCmdFlags_state, INVERTER_DISABLE);
 		update_and_queue_param_float(&torqueCmdLim_Nm, MAX_CMD_TORQUE_Nm);
+		service_can_tx(hcan);
+	}
+
+	if(invStatesByte6_state.data & INVERTER_LOCKOUT) {
+		// We've exited lockout
+		vehicle_state = VEHICLE_STANDBY;
 	}
 }
 
@@ -176,8 +185,13 @@ void handle_CAN() {
 	// TODO: Write
 }
 
-void handle_inputs() {
-	// TODO: Write
+void check_ready_to_drive() {
+	if(brakePressureFront_psi.data > PREDRIVE_BRAKE_THRESH_psi
+			&& brakePressureRear_psi.data > PREDRIVE_BRAKE_THRESH_psi
+			&& readyToDriveButton_state == PREDRIVE_BUTTON_PRESSE
+			&& vehicleState_state == VEHICLE_STANDBY) {
+		vehicleState_state = VEHICLE_PREDRIVE;
+	}
 }
 
 void handle_inv() {
