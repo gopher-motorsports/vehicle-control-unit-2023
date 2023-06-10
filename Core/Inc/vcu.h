@@ -8,24 +8,25 @@
 #ifndef INC_VCU_H_
 #define INC_VCU_H_
 
-// ===================================== VEHICLE PARAMETERS =====================================
-#define SERIES_CELL_COUNT_ul   84
-#define CELL_NOMINAL_VOLTAGE_V 3.6
-#define NOMINAL_PACK_VOLTAGE_V ( SERIES_CELL_COUNT_ul * CELL_NOMINAL_VOLTAGE_V )
+#include "main.h"
+
+
+// ========================================== CONSTANTS =========================================
+#define MATH_PI         3.14159265
+#define MATH_TAU        MATH_PI*2
+#define SECONDS_PER_MIN 60
 // ==============================================================================================
 
 // ======================================= APPS PARAMETERS ======================================
-#define APPS_MAX_POS_mm  45 // The position of the pedal at full travel
-#define APPS_MIN_POS_mm  5  // The position of the pedal at rest
-#define APPS_MARGIN_mm   2  // The margin on the top and bottom of the pedal for throttle mapping
-// The total physical travel of the APPS
+#define APPS_MAX_POS_mm  20 // The position of the pedal at 100% torque
+#define APPS_MIN_POS_mm  10  // The position of the pedal at 0% torque
 #define APPS_TOTAL_TRAVEL_mm ( APPS_MAX_POS_mm - APPS_MIN_POS_mm )
 // ==============================================================================================
 
 // ====================================== BRAKE PARAMETERS ======================================
 #define BRAKE_PRESS_MIN_psi    -50   // The minimum value of the brake pressure sensor
 #define BRAKE_PRESS_MAX_psi    2050  // The maximum value of the brake pressure sensor
-#define BRAKE_LIGHT_THRESH_psi 150 // The pressure at which the brake light will be activated
+#define BRAKE_LIGHT_THRESH_psi 50 // The pressure at which the brake light will be activated
 // ==============================================================================================
 // ============================= TRACTIVE SYSTEM CURRENT PARAMETERS =============================
 #define TS_CURRENT_MIN_A   -85   // The minimum value of the current sensor
@@ -33,8 +34,10 @@
 // ==============================================================================================
 
 // ================================== READY TO DRIVE PARAMETERS =================================
-#define PREDRIVE_BRAKE_THRESH_psi   100 // The minimum brake pressure to enter the driving state
-#define PREDRIVE_BUTTON_PRESSED 1       // The value of the button parameter when pressed
+#define PREDRIVE_BRAKE_THRESH_psi  100  // The minimum brake pressure to enter the driving state
+#define PREDRIVE_BUTTON_PRESSED    1    // The value of the button parameter when pressed
+#define PREDRIVE_TIME_ms           2000 // The length of predrive in ms
+#define RTD_BUTTON_PUSHED          GPIO_PIN_RESET
 // ==============================================================================================
 
 
@@ -55,10 +58,11 @@
 #define CORRELATION_TRIP_DELAY_ms    100  // The amount of time it takes a correlation fault to take effect
 
 // ------------------------------------ TS Current/Brake Check ----------------------------------
-#define BRAKE_TS_POWER_THRESH_W    5000
-#define BRAKE_TS_PRESS_THRESH_psi  450
-#define BRAKE_TS_CURRENT_THRESH_A  ( BRAKE_TS_POWER_THRESH_W / NOMINAL_PACK_VOLTAGE_V )
-#define BRAKE_TS_DELAY_ms          350
+#define BRAKE_TS_CURRENT_THRESH_A  14  // The current limit when the brake and
+#define BRAKE_TS_PRESS_THRESH_psi  450 // The amount of brake pressure needed
+#define BRAKE_TS_MAX_TORQUE
+#define BRAKE_TS_ON_DELAY_ms       50  // The amount of timer it takes the limit to turn on
+#define BRAKE_TS_OFF_DELAY_ms      50  // The amount of timer it takes the limit to turn off
 // ==============================================================================================
 
 // ====================================== COOLING PARAMETERS ====================================
@@ -84,6 +88,22 @@
 #define PARAM_CMD_RESERVED2     0x0000 // Reserved value in inverter parameter
 // ==============================================================================================
 
+// ======================================== I/O PARAMETERS ======================================
+#define BUZZER_ON        GPIO_PIN_SET
+#define BUZZER_OFF       GPIO_PIN_RESET
+#define BRAKE_LIGHT_ON   GPIO_PIN_SET
+#define BRAKE_LIGHT_OFF  GPIO_PIN_RESET
+// ==============================================================================================
+
+// ======================================= BSPD PARAMETERS ======================================
+// Whether each fault is active high or active low
+#define BSPD_APPS1_FAULT     GPIO_PIN_SET
+#define BSPD_APPS2_FAULT     GPIO_PIN_SET
+#define BSPD_BRAKE_FAULT     GPIO_PIN_SET
+#define BSPD_TS_SNS_FAULT    GPIO_PIN_SET
+#define BSPD_TS_BRK_FAULT    GPIO_PIN_SET
+// ==============================================================================================
+
 // =================== THROTTLE CALCULATION ===================
 // Throttle is calculated using APPS1 with APPS2 being used
 // for redundancy in the correlation  check mandated by rules
@@ -101,18 +121,18 @@ typedef enum
 	VEHICLE_FAULT     = 5
 } VEHICLE_STATE_t;
 
-#include "main.h"
-
 extern VEHICLE_STATE_t vehicle_state;
 
 void init(CAN_HandleTypeDef* hcan_ptr);
 void main_loop();
 void can_buffer_handling_loop();
 
-void check_ready_to_drive(); // Checks if we're good to enter the driving state
-void run_safety_checks();    // Runs safety checks on driver inputs
-void process_inverter();     // Updates vehicle state and applicable commands
-void update_outputs();       // Updates brake light and buzzer
-void update_cooling();       // Controls/updates the cooling system
+// TODO: update internal CAN states
+void update_RTD();         // Ready to drive logic
+void process_sensors();    // Runs safety checks on driver inputs
+void update_gcan_states(); // Updates GopherCAN states
+void process_inverter();   // Updates vehicle state and applicable commands
+void update_outputs();     // Updates brake light and buzzer
+void update_cooling();     // Controls/updates the cooling system
 
 #endif /* INC_VCU_H_ */
