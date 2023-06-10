@@ -5,10 +5,7 @@
  *      Author: Ben Abbott
  */
 
-#include "inverter.h"
 #include "vcu.h"
-#include "main.h"
-#include "GopherCAN.h"
 #include "gopher_sense.h"
 #include <stdlib.h>
 
@@ -27,7 +24,9 @@ uint16_t currentSensorFaultTimer_ms = 0;
 
 uint16_t correlationTimer_ms = 0;
 
-bool appsBrakeLatched_state = 0;
+boolean appsBrakeLatched_state = 0;
+
+VEHICLE_STATE_t vehicle_state = VEHICLE_STARTUP;
 
 // Initialization code goes here
 void init(CAN_HandleTypeDef* hcan_ptr) {
@@ -47,7 +46,6 @@ void main_loop() {
 	update_outputs();
 	update_cooling();
 }
-
 
 
 /**
@@ -132,9 +130,9 @@ void run_safety_checks() {
 	// APPS/Braking Check
 	if((brakePressureFront_psi.data > APPS_BRAKE_PRESS_THRESH_psi
 			&& pedalPosition1_mm.data > APPS_BRAKE_APPS1_THRESH_mm)) {
-		appsBrakeLatched_state = true;
+		appsBrakeLatched_state = TRUE;
 	} else if (pedalPosition1_mm.data <= APPS_BRAKE_RESET_THRESH_mm) {
-		appsBrakeLatched_state = false;
+		appsBrakeLatched_state = FALSE;
 	}
 
 	if(appsBrakeLatched_state) {
@@ -153,8 +151,13 @@ void process_inverter() {
 	if(invStatesByte4_state.data & 0x01) {
 		// TODO: ADD AN ERROR CODE IF WE ARE IN SPEED MODE
 	}
-
-
+	// If we are in the driving state and the inverter is disabled,
+	// go to the standby state.  This has to be after the startup stuff
+	// so that this case will only be hit if the inverter is not in lockout
+	if((vehicle_state == VEHICLE_DRIVING || vehicle_state == VEHICLE_PREDRIVE)
+		&& !(invStatesByte6_state.data & INVERTER_ENABLE)) {
+		vehicle_state = VEHICLE_STANDBY;
+	}
 
 	if(vehicle_state == VEHICLE_DRIVING) {
 		// Send a torque command
@@ -178,6 +181,14 @@ void process_inverter() {
 	if(invStatesByte6_state.data & INVERTER_LOCKOUT) {
 		// We've exited lockout
 		vehicle_state = VEHICLE_STANDBY;
+	} else {
+		// We're in lockout; reset faults
+		update_and_queue_param_u16(&invParameterAddress_state, PARAM_CMD_FAULT_CLEAR);
+		update_and_queue_param_u8(&invParameterRW_state, PARAM_CMD_WRITE);
+		update_and_queue_param_u8(&invParameterReserved1_state, PARAM_CMD_RESERVED1);
+		update_and_queue_param_u16(&invParameterData_state, PARAM_FAULT_CLEAR_DATA);
+		update_and_queue_param_u16(&invParameterReserved2_state, PARAM_CMD_RESERVED2);
+		service_can_tx(hcan);
 	}
 }
 
@@ -188,76 +199,10 @@ void handle_CAN() {
 void check_ready_to_drive() {
 	if(brakePressureFront_psi.data > PREDRIVE_BRAKE_THRESH_psi
 			&& brakePressureRear_psi.data > PREDRIVE_BRAKE_THRESH_psi
-			&& readyToDriveButton_state == PREDRIVE_BUTTON_PRESSE
-			&& vehicleState_state == VEHICLE_STANDBY) {
-		vehicleState_state = VEHICLE_PREDRIVE;
+			&& readyToDriveButton_state.data == PREDRIVE_BUTTON_PRESSED
+			&& vehicle_state == VEHICLE_STANDBY) {
+		vehicle_state = VEHICLE_PREDRIVE;
 	}
-}
-
-void handle_inv() {
-
-	// if the inverter is locked out, we must first disable and enable the motor
-	switch (vehicle_state) {
-		case VEHICLE_STARTUP:
-			if()
-			break;
-		//TODO: Edit this to match current params
-		case VEHICLE_LOCKOUT:
-			// send the disable then enable command with some delay
-			CAN_cmd.inverter_en = 0;
-			build_cmd_msg(msg_data, &CAN_cmd);
-			send_can_message(COMMAND_MSG_ID, 8, msg_data);
-
-			// also clear all faults when first starting up
-			rw_cmd.param_addr = FAULT_CLEAR;
-			rw_cmd.read_or_write = WRITE_CMD;
-			rw_cmd.data = 0;
-			build_param_cmd_msg(msg_data, &rw_cmd);
-			send_can_message(PARAM_RW_CMD_ID, 8, msg_data);
-			break;
-
-		case INV_FAULT_STATE:
-			// try to enable the motor
-			if (vehicle_state == INV_READY_STATE)
-			{
-				CAN_cmd.inverter_en = 1;
-				build_cmd_msg(msg_data, &CAN_cmd);
-				send_can_message(COMMAND_MSG_ID, 8, msg_data);
-			}
-			break;
-
-		case INV_READY_STATE:
-			// actually run the motor
-
-			// calculate the torque we want from the motor. Right now we are linear
-			if (brakePressureFront_psi.data <= BRAKE_PRESSURE_BREAK_THRESH_psi)
-			{
-				// Old command was "float curr_pp = vcu_apps2.data;"
-				float curr_pp =pedalPosition2_mm.data;
-				if (curr_pp >= APPS2_MAX_TRAVEL_mm)
-				{
-					torque_req = MAX_TORQUE_Nm;
-				}
-				else if (curr_pp <= APPS2_MIN_TRAVEL_mm)
-				{
-					torque_req = 0;
-				}
-				else
-				{
-					// TODO: linearly interpolate
-				}
-			}
-
-			CAN_cmd.torque_cmd = torque_req;
-			build_cmd_msg(msg_data, &CAN_cmd);
-			send_can_message(COMMAND_MSG_ID, 8, msg_data);
-			break;
-
-		default:
-			// not sure how we are here
-			inv_ctrl_state = INV_LOCKOUT_STATE;
-			break;
-		}
 }
 
 void update_outputs() {
@@ -267,18 +212,13 @@ void update_outputs() {
 		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
 	}
 
-	if(brakePressureFront_psi.data > BRAKE_LIGHT_THRESH_psi) {
+	if(brakePressureFront_psi.data > BRAKE_LIGHT_THRESH_psi
+			|| brakePressureRear_psi.data > BRAKE_LIGHT_THRESH_psi) {
 		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, GPIO_PIN_SET);
 	} else {
 		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, GPIO_PIN_RESET);
 	}
 	return;
-}
-
-void check_inv_lockout() {
-	if (vehicle_state) {
-
-	}
 }
 
 void check_RTD_button() {

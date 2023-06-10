@@ -34,6 +34,7 @@
 
 // ================================== READY TO DRIVE PARAMETERS =================================
 #define PREDRIVE_BRAKE_THRESH_psi   100 // The minimum brake pressure to enter the driving state
+#define PREDRIVE_BUTTON_PRESSED 1       // The value of the button parameter when pressed
 // ==============================================================================================
 
 
@@ -69,21 +70,24 @@
 
 
 // ================================== TRACTIVE SYSTEM PARAMETERS ================================
-#define MOTOR_DIRECTION           1    // Motor direction; 0 is reverse, 1 is forward
-#define MAX_CMD_TORQUE_Nm         150  // The maximum torque that will be commanded
-#define INVERTER_TIMEOUT_ms       100  // The time after which the vehicle state will be STARTUP
-#define INVERTER_ENABLE           0x01 // Flags to enable the inverter
-#define INVERTER_DISABLE          0x00 // Flags to disable the inverter
-#define INVERTER_LOCKOUT          0x40 // Lockout is bit 7 of byte 6
+#define MOTOR_DIRECTION         1      // Motor direction; 0 is reverse, 1 is forward
+#define MAX_CMD_TORQUE_Nm       150    // The maximum torque that will be commanded
+#define INVERTER_TIMEOUT_ms     100    // The time after which the vehicle will enter STARTUP
+#define INVERTER_ENABLE         0x01   // Flags to enable the inverter
+#define INVERTER_DISABLE        0x00   // Flags to disable the inverter
+#define INVERTER_LOCKOUT        0x40   // Lockout is bit 7 of byte 6
+#define PARAM_CMD_FAULT_CLEAR   20     // Address of the fault clear parameter
+#define PARAM_CMD_READ          0      // Value to send in parameter command to read value
+#define PARAM_CMD_WRITE         1      // Value to send in parameter command to read value
+#define PARAM_CMD_RESERVED1     0x00   // Reserved value in inverter parameter
+#define PARAM_FAULT_CLEAR_DATA  0      // Value to send in the data field when clearing faults
+#define PARAM_CMD_RESERVED2     0x0000 // Reserved value in inverter parameter
 // ==============================================================================================
 
 // =================== THROTTLE CALCULATION ===================
 // Throttle is calculated using APPS1 with APPS2 being used
 // for redundancy in the correlation  check mandated by rules
 // ============================================================
-
-#include "main.h"
-#include "gopher_sense.h"
 
 // This is the vehicle state which is affected both by the actions
 // of the driver and the current state of the inverter
@@ -97,16 +101,18 @@ typedef enum
 	VEHICLE_FAULT     = 5
 } VEHICLE_STATE_t;
 
+#include "main.h"
+
 extern VEHICLE_STATE_t vehicle_state;
 
 void init(CAN_HandleTypeDef* hcan_ptr);
 void main_loop();
 void can_buffer_handling_loop();
 
-void update_cooling();       // Controls/updates the cooling system
-void run_safety_checks();    // Runs safety checks on driver inputs
-void update_outputs();       // Updates brake light and buzzer
-void process_inverter();     // Updates vehicle state and applicable commands
 void check_ready_to_drive(); // Checks if we're good to enter the driving state
+void run_safety_checks();    // Runs safety checks on driver inputs
+void process_inverter();     // Updates vehicle state and applicable commands
+void update_outputs();       // Updates brake light and buzzer
+void update_cooling();       // Controls/updates the cooling system
 
 #endif /* INC_VCU_H_ */
