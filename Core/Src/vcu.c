@@ -49,9 +49,12 @@ void main_loop() {
 	update_cooling();
 	update_display_fault_status();
 	update_gcan_states(); // Should be after process_sensors
+	if(HAL_GetTick() % 1 == 0) {
+		HAL_GPIO_TogglePin(STATUS_R_GPIO_Port, STATUS_R_Pin);
+	}
 
 	// Turn off RGB
-	HAL_GPIO_WritePin(STATUS_R_GPIO_Port, STATUS_R_Pin, SET);
+// 	HAL_GPIO_WritePin(STATUS_R_GPIO_Port, STATUS_R_Pin, SET);
 	HAL_GPIO_WritePin(STATUS_G_GPIO_Port, STATUS_G_Pin, SET);
 	HAL_GPIO_WritePin(STATUS_B_GPIO_Port, STATUS_B_Pin, SET);
 }
@@ -180,7 +183,7 @@ void process_sensors() {
 	if(appsBrakeLatched_state) {
 		torqueLimit_Nm = 0;
 	}
-
+	// TODO: DO FILTERING!!!!!!!!!!!!!
 	if(bspdTractiveSystemBrakingFault_state.data) {
 		float tractiveSystemBrakingLimit_Nm = 0;
 		float accumulatorVoltage_V = seg1Voltage_V.data +
@@ -260,17 +263,12 @@ void process_inverter() {
 
 		if((invStatesByte6_state.data & INVERTER_LOCKOUT)) {
 			// We're in lockout; reset faults
-			// TODO: Fix with send_param
 			invParameterAddress_state.data = PARAM_CMD_FAULT_CLEAR;
 			invParameterRW_state.data = PARAM_CMD_WRITE;
 			invParameterReserved1_state.data = PARAM_CMD_RESERVED1;
 			invParameterData_state.data = PARAM_FAULT_CLEAR_DATA;
 			invParameterReserved2_state.data = PARAM_CMD_RESERVED2;
-			send_parameter(&(invParameterAddress_state.info));
-			send_parameter(&(invParameterRW_state.info));
-			send_parameter(&(invParameterReserved1_state.info));
-			send_parameter(&(invParameterData_state.info));
-			send_parameter(&(invParameterReserved2_state.info));
+			send_group(INVERTER_PARAM_ID);
 			service_can_tx(hcan);
 			vehicle_state = VEHICLE_LOCKOUT;
 		} else {
@@ -286,11 +284,7 @@ void process_inverter() {
 		cmdDir_state.data = (U8)(MOTOR_DIRECTION > 0);
 		invCmdFlags_state.data = INVERTER_ENABLE;
 		torqueCmdLim_Nm.data = torqueLimit_Nm;
-		send_parameter(&(torqueCmd_Nm.info));
-		send_parameter(&(speedCmd_rpm.info));
-		send_parameter(&(cmdDir_state.info));
-		send_parameter(&(invCmdFlags_state.info));
-		send_parameter(&(torqueCmdLim_Nm.info));
+		send_group(INVERTER_CMD_ID);
 		service_can_tx(hcan);
 	} else {
 		// Tell the inverter we don't want the motor to spin
@@ -300,11 +294,7 @@ void process_inverter() {
 		cmdDir_state.data = (U8)(MOTOR_DIRECTION > 0);
 		invCmdFlags_state.data = INVERTER_DISABLE;
 		torqueCmdLim_Nm.data = torqueLimit_Nm;
-		send_parameter(&(torqueCmd_Nm.info));
-		send_parameter(&(speedCmd_rpm.info));
-		send_parameter(&(cmdDir_state.info));
-		send_parameter(&(invCmdFlags_state.info));
-		send_parameter(&(torqueCmdLim_Nm.info));
+		send_group(INVERTER_CMD_ID);
 		service_can_tx(hcan);
 	}
 }

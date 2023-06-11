@@ -26,7 +26,7 @@
 // ====================================== BRAKE PARAMETERS ======================================
 #define BRAKE_PRESS_MIN_psi    -50   // The minimum value of the brake pressure sensor
 #define BRAKE_PRESS_MAX_psi    2050  // The maximum value of the brake pressure sensor
-#define BRAKE_LIGHT_THRESH_psi 50 // The pressure at which the brake light will be activated
+#define BRAKE_LIGHT_THRESH_psi 25 // The pressure at which the brake light will be activated
 // ==============================================================================================
 // ============================= TRACTIVE SYSTEM CURRENT PARAMETERS =============================
 #define TS_CURRENT_MIN_A   -85   // The minimum value of the current sensor
@@ -80,6 +80,8 @@
 #define INVERTER_ENABLE         0x01   // Flags to enable the inverter
 #define INVERTER_DISABLE        0x00   // Flags to disable the inverter
 #define INVERTER_LOCKOUT        0x40   // Lockout is bit 7 of byte 6
+#define INVERTER_CMD_ID         0x0C0  // The CAN ID of the inverter command
+#define INVERTER_PARAM_ID       0x0C1  // The CAN ID of the parameter message
 #define PARAM_CMD_FAULT_CLEAR   20     // Address of the fault clear parameter
 #define PARAM_CMD_READ          0      // Value to send in parameter command to read value
 #define PARAM_CMD_WRITE         1      // Value to send in parameter command to read value
