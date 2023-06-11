@@ -129,7 +129,8 @@ typedef enum {
 	BSPD_FAULT,
 	AMS_FAULT,
 	IMD_FAULT,
-	VCU_FAULT
+	VCU_FAULT,
+	BMS_FAULT
 } DISPLAY_FAULT_STATUS_t;
 
 extern VEHICLE_STATE_t vehicle_state;

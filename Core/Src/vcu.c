@@ -219,7 +219,7 @@ void process_sensors() {
 void update_display_fault_status() {
 	int status = NONE;
 	if(amsFault_state.data) status = AMS_FAULT;
-	//else if(bmsFault_state.data) status = BMS_FAULT;
+	else if(bmsNumActiveAlerts_state.data) status = BMS_FAULT;
 	else if(vcuPedalPositionBrakingFault_state.data) status = RELEASE_PEDAL;
 	else if(bspdTractiveSystemBrakingFault_state.data || vcuBrakingClampingCurrent_state.data) status = BREAKING_FAULT;
 	else if(vcuPedalPositionCorrelationFault_state.data) status = APPS_FAULT;
