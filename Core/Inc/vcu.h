@@ -60,7 +60,7 @@
 // ------------------------------------ TS Current/Brake Check ----------------------------------
 #define BRAKE_TS_CURRENT_THRESH_A  14  // The current limit when the brake and
 #define BRAKE_TS_PRESS_THRESH_psi  450 // The amount of brake pressure needed
-#define BRAKE_TS_MAX_TORQUE
+#define BRAKE_TS_MAX_TORQUE            // A clamp on the maximum amount of torque when triggered
 #define BRAKE_TS_ON_DELAY_ms       50  // The amount of timer it takes the limit to turn on
 #define BRAKE_TS_OFF_DELAY_ms      50  // The amount of timer it takes the limit to turn off
 // ==============================================================================================
@@ -75,7 +75,7 @@
 
 // ================================== TRACTIVE SYSTEM PARAMETERS ================================
 #define MOTOR_DIRECTION         1      // Motor direction; 0 is reverse, 1 is forward
-#define MAX_CMD_TORQUE_Nm       150    // The maximum torque that will be commanded
+#define MAX_CMD_TORQUE_Nm       50    // The maximum torque that will be commanded
 #define INVERTER_TIMEOUT_ms     100    // The time after which the vehicle will enter STARTUP
 #define INVERTER_ENABLE         0x01   // Flags to enable the inverter
 #define INVERTER_DISABLE        0x00   // Flags to disable the inverter
@@ -99,10 +99,10 @@
 
 // ======================================= BSPD PARAMETERS ======================================
 // Whether each fault is active high or active low
-#define BSPD_APPS1_FAULT     GPIO_PIN_SET
-#define BSPD_APPS2_FAULT     GPIO_PIN_SET
-#define BSPD_BRAKE_FAULT     GPIO_PIN_SET
-#define BSPD_TS_SNS_FAULT    GPIO_PIN_SET
+#define BSPD_APPS1_FAULT     GPIO_PIN_RESET
+#define BSPD_APPS2_FAULT     GPIO_PIN_RESET
+#define BSPD_BRAKE_FAULT     GPIO_PIN_RESET
+#define BSPD_TS_SNS_FAULT    GPIO_PIN_RESET
 #define BSPD_TS_BRK_FAULT    GPIO_PIN_SET
 // ==============================================================================================
 

@@ -47,7 +47,6 @@ DMA_HandleTypeDef hdma_adc1;
 
 CAN_HandleTypeDef hcan2;
 
-TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart1;
@@ -65,7 +64,6 @@ static void MX_DMA_Init(void);
 static void MX_CAN2_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_TIM3_Init(void);
 static void MX_TIM10_Init(void);
 void task_MainTask(void const * argument);
 void task_BufferHandling(void const * argument);
@@ -113,7 +111,6 @@ int main(void)
   MX_CAN2_Init();
   MX_USART1_UART_Init();
   MX_ADC1_Init();
-  MX_TIM3_Init();
   MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
 
@@ -338,55 +335,6 @@ static void MX_CAN2_Init(void)
 }
 
 /**
-  * @brief TIM3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM3_Init(void)
-{
-
-  /* USER CODE BEGIN TIM3_Init 0 */
-
-  /* USER CODE END TIM3_Init 0 */
-
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM3_Init 1 */
-
-  /* USER CODE END TIM3_Init 1 */
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM3_Init 2 */
-
-  /* USER CODE END TIM3_Init 2 */
-  HAL_TIM_MspPostInit(&htim3);
-
-}
-
-/**
   * @brief TIM10 Initialization Function
   * @param None
   * @retval None
@@ -483,13 +431,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO2_Pin|GPIO3_Pin|PUMP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO2_Pin|GPIO3_Pin|PUMP_Pin|FAN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, MCU_STATUS_LED_Pin|GSENSE_LED_Pin|HARDFAULT_LED_Pin|BRK_LT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, BUZZER_Pin|STATUS_R_Pin|STATUS_G_Pin|STATUS_B_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, BUZZER_Pin|STATUS_R_Pin|STATUS_G_Pin|STATUS_B_Pin
+                          |ACC_FAN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : GPIO1_Pin */
   GPIO_InitStruct.Pin = GPIO1_Pin;
@@ -497,8 +446,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIO1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : GPIO2_Pin GPIO3_Pin PUMP_Pin */
-  GPIO_InitStruct.Pin = GPIO2_Pin|GPIO3_Pin|PUMP_Pin;
+  /*Configure GPIO pins : GPIO2_Pin GPIO3_Pin PUMP_Pin FAN_Pin */
+  GPIO_InitStruct.Pin = GPIO2_Pin|GPIO3_Pin|PUMP_Pin|FAN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -511,12 +460,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BUZZER_Pin */
-  GPIO_InitStruct.Pin = BUZZER_Pin;
+  /*Configure GPIO pins : BUZZER_Pin ACC_FAN_Pin */
+  GPIO_InitStruct.Pin = BUZZER_Pin|ACC_FAN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(BUZZER_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : STATUS_R_Pin STATUS_G_Pin STATUS_B_Pin */
   GPIO_InitStruct.Pin = STATUS_R_Pin|STATUS_G_Pin|STATUS_B_Pin;
@@ -543,8 +492,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BSPD_TS_BRK_FAULT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SW1_Pin SW2_Pin ACC_FAN_Pin */
-  GPIO_InitStruct.Pin = SW1_Pin|SW2_Pin|ACC_FAN_Pin;
+  /*Configure GPIO pins : SW1_Pin SW2_Pin */
+  GPIO_InitStruct.Pin = SW1_Pin|SW2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

@@ -54,8 +54,8 @@ void main_loop() {
 	}
 
 	// Turn off RGB
-// 	HAL_GPIO_WritePin(STATUS_R_GPIO_Port, STATUS_R_Pin, SET);
-	HAL_GPIO_WritePin(STATUS_G_GPIO_Port, STATUS_G_Pin, SET);
+ 	HAL_GPIO_WritePin(STATUS_R_GPIO_Port, STATUS_R_Pin, SET);
+//	HAL_GPIO_WritePin(STATUS_G_GPIO_Port, STATUS_G_Pin, SET);
 	HAL_GPIO_WritePin(STATUS_B_GPIO_Port, STATUS_B_Pin, SET);
 }
 
@@ -289,7 +289,7 @@ void process_inverter() {
 	} else {
 		// Tell the inverter we don't want the motor to spin
 		// This will also attempt to exit lockout
-		torqueCmd_Nm.data = desiredTorque_Nm;
+		torqueCmd_Nm.data = 0;
 		speedCmd_rpm.data = 0;
 		cmdDir_state.data = (U8)(MOTOR_DIRECTION > 0);
 		invCmdFlags_state.data = INVERTER_DISABLE;
