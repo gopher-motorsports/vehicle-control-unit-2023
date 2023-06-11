@@ -22,7 +22,7 @@
 #define APPS_MIN_TORQUE_POS_mm  10.0f  // The position of the pedal at 0% torque
 #define APPS_MAX_ERROR_POS_mm 24.0f // position where the error begins
 #define APPS_MIN_ERROR_POS_mm 1.0f // position where the error begins
-#define APPS_TOTAL_TRAVEL_mm ( APPS_MAX_POS_mm - APPS_MIN_POS_mm )
+#define APPS_TOTAL_TRAVEL_mm ( APPS_MAX_TORQUE_POS_mm - APPS_MIN_TORQUE_POS_mm )
 // ==============================================================================================
 
 // ====================================== BRAKE PARAMETERS ======================================
@@ -52,9 +52,9 @@
 // This check is done using APPS1 (since APPS1 determines the applied torque) and the BSE
 #define APPS_BRAKE_PRESS_THRESH_psi  50.0f  // The minimum amount of brake pressure that will trip
 // The minimum APPS position that will trip the APPS/Brake check
-#define APPS_BRAKE_APPS1_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.25 ) + APPS_MIN_POS_mm
+#define APPS_BRAKE_APPS1_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.25 ) + APPS_MIN_TORQUE_POS_mm
 // The maximum APPS position that will reset the APPS/Brake check
-#define APPS_BRAKE_RESET_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.05 ) + APPS_MIN_POS_mm
+#define APPS_BRAKE_RESET_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.05 ) + APPS_MIN_TORQUE_POS_mm
 
 // ------------------------------------ APPS Correlation Check ----------------------------------
 #define APPS_CORRELATION_THRESH_mm  ( APPS_TOTAL_TRAVEL_mm * 0.1 )
@@ -94,10 +94,10 @@
 // ==============================================================================================
 
 // ======================================== I/O PARAMETERS ======================================
-#define BUZZER_ON        (GPIO_PIN_SET)
-#define BUZZER_OFF       (GPIO_PIN_RESET)
-#define BRAKE_LIGHT_ON   (GPIO_PIN_SET)
-#define BRAKE_LIGHT_OFF  (GPIO_PIN_RESET)
+#define MOSFET_PULL_DOWN_ON (GPIO_PIN_SET)
+#define MOSFET_PULL_DOWN_OFF (GPIO_PIN_RESET)
+#define PLM_CONTROL_ON (GPIO_PIN_RESET)
+#define PLM_CONTROL_OFF (GPIO_PIN_SET)
 // ==============================================================================================
 
 // ======================================= BSPD PARAMETERS ======================================
@@ -129,7 +129,7 @@ typedef enum
 typedef enum {
 	NONE = 0,
 	RELEASE_PEDAL,
-	BREAKING_FAULT,
+	BRAKING_FAULT,
 	APPS_FAULT,
 	BSPD_FAULT,
 	AMS_FAULT,

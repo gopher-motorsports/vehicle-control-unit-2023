@@ -28,19 +28,16 @@ boolean appsBrakeLatched_state = 0;
 
 boolean readyToDriveButtonPressed_state = 0;
 
-VEHICLE_STATE_t vehicle_state = VEHICLE_STARTUP;
+VEHICLE_STATE_t vehicle_state = VEHICLE_NO_COMMS;
 
 #define HBEAT_LED_DELAY_TIME_ms 500
+#define SET_INV_DISABLED() do{ desiredTorque_Nm = 0; torqueLimit_Nm = MAX_CMD_TORQUE_Nm; inverter_enable_state = INVERTER_DISABLE; } while(0)
 
 // Initialization code goes here
 void init(CAN_HandleTypeDef* hcan_ptr) {
 	hcan = hcan_ptr;
 
 	init_can(GCAN1, hcan, VCU_ID, BXTYPE_SLAVE);
-
-	// TODO: Initialization code/functions
-	// TODO: Validate inverter config
-
 }
 
 void main_loop() {
@@ -115,7 +112,7 @@ void update_gcan_states() {
 
 void update_cooling() {
 	// Pump should always be on at least a little bit, making sure that's the case (RESET turns the pin on)
-	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, PLM_CONTROL_ON);
 
 	// TODO: Ramp up cooling based on temperatures of the inverter and motor using PWM
 	// TODO: Set pump and fan pins to PWM
@@ -125,9 +122,9 @@ void update_cooling() {
 			|| gateDriverBoardTemp_C.data >= GDB_TEMP_THRESH_C
 			|| controlBoardTemp_C.data >= CTRL_BOARD_TEMP_THRESH_C
 			|| motorTemp_C.data >= MOTOR_TEMP_THRESH_C){
-		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_ON);
 	} else {
-		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_OFF);
 	}
 
 	// TODO accumulator fans
@@ -194,7 +191,7 @@ void process_sensors() {
 	if(appsBrakeLatched_state) {
 		torqueLimit_Nm = 0;
 	}
-	// TODO: DO FILTERING!!!!!!!!!!!!!
+	// TODO make some hysteresis on this in order to make it less jumpy
 	if(bspdTractiveSystemBrakingFault_state.data) {
 		float tractiveSystemBrakingLimit_Nm = 0;
 		float accumulatorVoltage_V = dcBusVoltage_V.data;
@@ -229,7 +226,7 @@ void update_display_fault_status() {
 	if(amsFault_state.data) status = AMS_FAULT;
 	else if(bmsNumActiveAlerts_state.data) status = BMS_FAULT;
 	else if(vcuPedalPositionBrakingFault_state.data) status = RELEASE_PEDAL;
-	else if(bspdTractiveSystemBrakingFault_state.data || vcuBrakingClampingCurrent_state.data) status = BREAKING_FAULT;
+	else if(bspdTractiveSystemBrakingFault_state.data || vcuBrakingClampingCurrent_state.data) status = BRAKING_FAULT;
 	else if(vcuPedalPositionCorrelationFault_state.data) status = APPS_FAULT;
 	else if(bspdFault_state.data
 			|| bspdBrakePressureSensorFault_state.data
@@ -279,9 +276,7 @@ void process_inverter() {
 		{
 			vehicle_state = VEHICLE_LOCKOUT;
 		}
-		desiredTorque_Nm = 0;
-		torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
-		inverter_enable_state = INVERTER_DISABLE;
+		SET_INV_DISABLED();
 		break;
 
 	case VEHICLE_LOCKOUT:
@@ -300,9 +295,7 @@ void process_inverter() {
 			// We've exited lockout
 			vehicle_state = VEHICLE_STANDBY;
 		}
-		desiredTorque_Nm = 0;
-		torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
-		inverter_enable_state = INVERTER_DISABLE;
+		SET_INV_DISABLED();
 		break;
 
 	case VEHICLE_STANDBY:
@@ -314,18 +307,14 @@ void process_inverter() {
 			vehicle_state = VEHICLE_PREDRIVE;
 			preDriveTimer_ms = 0;
 		}
-		desiredTorque_Nm = 0;
-		torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
-		inverter_enable_state = INVERTER_DISABLE;
+		SET_INV_DISABLED();
 
 	case VEHICLE_PREDRIVE:
 		// buzz the RTD buzzer for the correct amount of time
 		if(++preDriveTimer_ms > PREDRIVE_TIME_ms) {
 			vehicle_state = VEHICLE_DRIVING;
 		}
-		desiredTorque_Nm = 0;
-		torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
-		inverter_enable_state = INVERTER_DISABLE;
+		SET_INV_DISABLED();
 		break;
 
 	case VEHICLE_DRIVING:
@@ -335,9 +324,7 @@ void process_inverter() {
 
 	default:
 		vehicle_state = VEHICLE_NO_COMMS;
-		desiredTorque_Nm = 0;
-		torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
-		inverter_enable_state = INVERTER_DISABLE;
+		SET_INV_DISABLED();
 		break;
 	}
 
@@ -354,18 +341,18 @@ void process_inverter() {
 
 void update_outputs() {
 	if(vehicle_state == VEHICLE_PREDRIVE) {
-		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, BUZZER_ON);
+		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, MOSFET_PULL_DOWN_ON);
 		update_and_queue_param_u8(&vehicleBuzzerOn_state, TRUE);
 	} else {
-		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, BUZZER_OFF);
+		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, MOSFET_PULL_DOWN_OFF);
 		update_and_queue_param_u8(&vehicleBuzzerOn_state, FALSE);
 	}
 
 	if(brakePressureFront_psi.data > BRAKE_LIGHT_THRESH_psi) {
-		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, BRAKE_LIGHT_ON);
+		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, MOSFET_PULL_DOWN_ON);
 		update_and_queue_param_u8(&brakeLightOn_state, TRUE);
 	} else {
-		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, BRAKE_LIGHT_OFF);
+		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, MOSFET_PULL_DOWN_OFF);
 		update_and_queue_param_u8(&brakeLightOn_state, FALSE);
 	}
 	return;
