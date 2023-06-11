@@ -18,8 +18,10 @@
 // ==============================================================================================
 
 // ======================================= APPS PARAMETERS ======================================
-#define APPS_MAX_POS_mm  20 // The position of the pedal at 100% torque
-#define APPS_MIN_POS_mm  10  // The position of the pedal at 0% torque
+#define APPS_MAX_TORQUE_POS_mm  20.0f // The position of the pedal at 100% torque
+#define APPS_MIN_TORQUE_POS_mm  10.0f  // The position of the pedal at 0% torque
+#define APPS_MAX_ERROR_POS_mm 24.0f // position where the error begins
+#define APPS_MIN_ERROR_POS_mm 1.0f // position where the error begins
 #define APPS_TOTAL_TRAVEL_mm ( APPS_MAX_POS_mm - APPS_MIN_POS_mm )
 // ==============================================================================================
 
@@ -37,7 +39,8 @@
 #define PREDRIVE_BRAKE_THRESH_psi  100  // The minimum brake pressure to enter the driving state
 #define PREDRIVE_BUTTON_PRESSED    1    // The value of the button parameter when pressed
 #define PREDRIVE_TIME_ms           2000 // The length of predrive in ms
-#define RTD_BUTTON_PUSHED          GPIO_PIN_RESET
+#define RTD_BUTTON_PUSHED          (GPIO_PIN_RESET)
+#define TS_ON_THRESHOLD_VOLTAGE_V  190.0
 // ==============================================================================================
 
 
@@ -47,7 +50,7 @@
 
 // -------------------------------------- APPS/Brake Check --------------------------------------
 // This check is done using APPS1 (since APPS1 determines the applied torque) and the BSE
-#define APPS_BRAKE_PRESS_THRESH_psi  50  // The minimum amount of brake pressure that will trip
+#define APPS_BRAKE_PRESS_THRESH_psi  50.0f  // The minimum amount of brake pressure that will trip
 // The minimum APPS position that will trip the APPS/Brake check
 #define APPS_BRAKE_APPS1_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.25 ) + APPS_MIN_POS_mm
 // The maximum APPS position that will reset the APPS/Brake check
@@ -58,24 +61,24 @@
 #define CORRELATION_TRIP_DELAY_ms    100  // The amount of time it takes a correlation fault to take effect
 
 // ------------------------------------ TS Current/Brake Check ----------------------------------
-#define BRAKE_TS_CURRENT_THRESH_A  14  // The current limit when the brake and
-#define BRAKE_TS_PRESS_THRESH_psi  450 // The amount of brake pressure needed
+#define BRAKE_TS_CURRENT_THRESH_A  14.0f  // The current limit when the brake and
+#define BRAKE_TS_PRESS_THRESH_psi  450.0f // The amount of brake pressure needed
 #define BRAKE_TS_MAX_TORQUE            // A clamp on the maximum amount of torque when triggered
 #define BRAKE_TS_ON_DELAY_ms       50  // The amount of timer it takes the limit to turn on
 #define BRAKE_TS_OFF_DELAY_ms      50  // The amount of timer it takes the limit to turn off
 // ==============================================================================================
 
 // ====================================== COOLING PARAMETERS ====================================
-#define IGBT_TEMP_THRESH_C        40 // Minimum IGBT temperature for cooling fan to turn on
-#define GDB_TEMP_THRESH_C         40 // Minimum Gate Drive Board temp for cooling fan to turn on
-#define CTRL_BOARD_TEMP_THRESH_C  40 // Minimum Control Board temp for cooling fan to turn on
-#define MOTOR_TEMP_THRESH_C       30 // Minimum Motor temperature for cooling fan to turn on
+#define IGBT_TEMP_THRESH_C        40.0f // Minimum IGBT temperature for cooling fan to turn on
+#define GDB_TEMP_THRESH_C         40.0f // Minimum Gate Drive Board temp for cooling fan to turn on
+#define CTRL_BOARD_TEMP_THRESH_C  40.0f // Minimum Control Board temp for cooling fan to turn on
+#define MOTOR_TEMP_THRESH_C       30.0f // Minimum Motor temperature for cooling fan to turn on
 // ==============================================================================================
 
 
 // ================================== TRACTIVE SYSTEM PARAMETERS ================================
 #define MOTOR_DIRECTION         1      // Motor direction; 0 is reverse, 1 is forward
-#define MAX_CMD_TORQUE_Nm       50    // The maximum torque that will be commanded
+#define MAX_CMD_TORQUE_Nm       50.0f    // The maximum torque that will be commanded
 #define INVERTER_TIMEOUT_ms     100    // The time after which the vehicle will enter STARTUP
 #define INVERTER_ENABLE         0x01   // Flags to enable the inverter
 #define INVERTER_DISABLE        0x00   // Flags to disable the inverter
@@ -91,10 +94,10 @@
 // ==============================================================================================
 
 // ======================================== I/O PARAMETERS ======================================
-#define BUZZER_ON        GPIO_PIN_SET
-#define BUZZER_OFF       GPIO_PIN_RESET
-#define BRAKE_LIGHT_ON   GPIO_PIN_SET
-#define BRAKE_LIGHT_OFF  GPIO_PIN_RESET
+#define BUZZER_ON        (GPIO_PIN_SET)
+#define BUZZER_OFF       (GPIO_PIN_RESET)
+#define BRAKE_LIGHT_ON   (GPIO_PIN_SET)
+#define BRAKE_LIGHT_OFF  (GPIO_PIN_RESET)
 // ==============================================================================================
 
 // ======================================= BSPD PARAMETERS ======================================
@@ -115,7 +118,7 @@
 // of the driver and the current state of the inverter
 typedef enum
 {
-	VEHICLE_STARTUP   = 0, // When the vehicle first turns on (no inverter communication)
+	VEHICLE_NO_COMMS  = 0, // When the inverter first turns on and if there is ever a loss of communication
 	VEHICLE_LOCKOUT   = 1, // The vehicle can detect that the inverter is in lockout
 	VEHICLE_STANDBY   = 2, // The inverter has exited lockout but no torque commands will be sent
 	VEHICLE_PREDRIVE  = 3, // The vehicle buzzer is active and the driving state will be entered
