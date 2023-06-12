@@ -78,8 +78,20 @@ void can_buffer_handling_loop()
 
 void update_gcan_states() {
 	// Log pedal position percentages
-	update_and_queue_param_float(&pedalPosition1_percent, (pedalPosition1_mm-APPS_MAX_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm);
-	update_and_queue_param_float(&pedalPosition2_percent, (pedalPosition2_mm-APPS_MAX_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm);
+	float pedalPos1 = 100.0*(pedalPosition1_mm.data-APPS_MIN_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm;
+	if(pedalPos1 < 0) {
+		pedalPos1 = 0;
+	} else if (pedalPos1 > 100) {
+		pedalPos1 = 100;
+	}
+	float pedalPos2 = 100.0*(pedalPosition2_mm.data-APPS_MIN_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm;
+	if(pedalPos2 < 0) {
+		pedalPos2 = 0;
+	} else if (pedalPos2 > 100) {
+		pedalPos2 = 100;
+	}
+	update_and_queue_param_float(&pedalPosition1_percent, pedalPos1);
+	update_and_queue_param_float(&pedalPosition2_percent, pedalPos2);
 	// Log BSPD sensor faults
 	update_and_queue_param_u8(&bspdPedalPosition1Fault_state,
 			HAL_GPIO_ReadPin(BSPD_APPS1_FAULT_GPIO_Port, BSPD_APPS1_FAULT_Pin) == BSPD_APPS1_FAULT);
@@ -101,7 +113,7 @@ void update_gcan_states() {
 	update_and_queue_param_u8(&vcuPedalPositionCorrelationFault_state, correlationTimer_ms > CORRELATION_TRIP_DELAY_ms);
 	update_and_queue_param_u8(&vcuPedalPositionBrakingFault_state, appsBrakeLatched_state);
 	// Requested torque
-	update_and_queue_param_u8(&vcuTorqueRequested_Nm, desiredTorque_Nm);
+	update_and_queue_param_float(&vcuTorqueRequested_Nm, desiredTorque_Nm);
 	// Cooling
 	update_and_queue_param_u8(&coolantFanPower_percent, 100*HAL_GPIO_ReadPin(FAN_GPIO_Port, FAN_Pin));
 	update_and_queue_param_u8(&coolantPumpPower_percent, 100*HAL_GPIO_ReadPin(PUMP_GPIO_Port, PUMP_Pin));
@@ -111,6 +123,9 @@ void update_gcan_states() {
 	update_and_queue_param_u8(&readyToDriveButton_state, readyToDriveButtonPressed_state);
 
 	update_and_queue_param_u8(&vcuGSenseStatus_state, HAL_GPIO_ReadPin(GSENSE_LED_GPIO_Port, GSENSE_LED_Pin));
+	// Calculate wheel speed from rpm
+	wheelSpeedRearRight_mph.data = ((motorSpeed_rpm.data * MINUTES_PER_HOUR) * WHEEL_DIAMETER_IN * MATH_PI) / (FINAL_DRIVE_RATIO * IN_PER_FT);
+	wheelSpeedFrontLeft_mph.data = wheelSpeedFrontRight_mph.data;
 }
 
 void update_cooling() {

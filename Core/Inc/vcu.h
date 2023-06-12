@@ -12,9 +12,11 @@
 
 
 // ========================================== CONSTANTS =========================================
-#define MATH_PI         3.14159265
-#define MATH_TAU        MATH_PI*2
-#define SECONDS_PER_MIN 60
+#define MATH_PI           3.14159265
+#define MATH_TAU          MATH_PI*2
+#define SECONDS_PER_MIN   60
+#define MINUTES_PER_HOUR  60     // For conversion from rpm to mph
+#define IN_PER_FT         12     // For conversion from rpm to mph
 // ==============================================================================================
 
 // ======================================= APPS PARAMETERS ======================================
@@ -91,6 +93,8 @@
 #define PARAM_CMD_RESERVED1     0x00   // Reserved value in inverter parameter
 #define PARAM_FAULT_CLEAR_DATA  0      // Value to send in the data field when clearing faults
 #define PARAM_CMD_RESERVED2     0x0000 // Reserved value in inverter parameter
+#define FINAL_DRIVE_RATIO       4.363  // The final drive ratio
+#define WHEEL_DIAMETER_IN       10     // Wheel diameter
 // ==============================================================================================
 
 // ======================================== I/O PARAMETERS ======================================
