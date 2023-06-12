@@ -77,6 +77,9 @@ void can_buffer_handling_loop()
 }
 
 void update_gcan_states() {
+	// Log pedal position percentages
+	update_and_queue_param_float(&pedalPosition1_percent, (pedalPosition1_mm-APPS_MAX_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm);
+	update_and_queue_param_float(&pedalPosition2_percent, (pedalPosition2_mm-APPS_MAX_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm);
 	// Log BSPD sensor faults
 	update_and_queue_param_u8(&bspdPedalPosition1Fault_state,
 			HAL_GPIO_ReadPin(BSPD_APPS1_FAULT_GPIO_Port, BSPD_APPS1_FAULT_Pin) == BSPD_APPS1_FAULT);
@@ -308,6 +311,7 @@ void process_inverter() {
 			preDriveTimer_ms = 0;
 		}
 		SET_INV_DISABLED();
+		break;
 
 	case VEHICLE_PREDRIVE:
 		// buzz the RTD buzzer for the correct amount of time

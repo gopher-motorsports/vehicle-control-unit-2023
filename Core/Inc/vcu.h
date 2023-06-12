@@ -82,7 +82,7 @@
 #define INVERTER_TIMEOUT_ms     100    // The time after which the vehicle will enter STARTUP
 #define INVERTER_ENABLE         0x01   // Flags to enable the inverter
 #define INVERTER_DISABLE        0x00   // Flags to disable the inverter
-#define INVERTER_LOCKOUT        0x40   // Lockout is bit 7 of byte 6
+#define INVERTER_LOCKOUT        0x80   // Lockout is bit 7 of byte 6
 #define INVERTER_CMD_ID         0x0C0  // The CAN ID of the inverter command
 #define INVERTER_PARAM_ID       0x0C1  // The CAN ID of the parameter message
 #define PARAM_CMD_FAULT_CLEAR   20     // Address of the fault clear parameter
