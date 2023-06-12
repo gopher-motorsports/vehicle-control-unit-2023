@@ -90,7 +90,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -137,11 +137,11 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of main_task */
-  osThreadDef(main_task, task_MainTask, osPriorityNormal, 0, 512);
+  osThreadDef(main_task, task_MainTask, osPriorityNormal, 0, 1024);
   main_taskHandle = osThreadCreate(osThread(main_task), NULL);
 
   /* definition and creation of buffer_handling */
-  osThreadDef(buffer_handling, task_BufferHandling, osPriorityAboveNormal, 0, 256);
+  osThreadDef(buffer_handling, task_BufferHandling, osPriorityAboveNormal, 0, 1024);
   buffer_handlingHandle = osThreadCreate(osThread(buffer_handling), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

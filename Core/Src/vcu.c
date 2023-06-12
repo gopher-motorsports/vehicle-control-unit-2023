@@ -145,7 +145,8 @@ void update_cooling() {
 		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_OFF);
 	}
 
-	// TODO accumulator fans
+
+	HAL_GPIO_WritePin(ACC_FAN_GPIO_Port, ACC_FAN_Pin, dcBusVoltage_V.data < 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
 }
 
 void process_sensors() {
@@ -284,6 +285,14 @@ void process_inverter() {
 	// if we ever enter lockout, make sure to go to that state to correctly handle it
 	if((invStatesByte6_state.data & INVERTER_LOCKOUT)) {
 		vehicle_state = VEHICLE_LOCKOUT;
+
+		invParameterAddress_state.data = PARAM_CMD_FAULT_CLEAR;
+		invParameterRW_state.data = PARAM_CMD_WRITE;
+		invParameterReserved1_state.data = PARAM_CMD_RESERVED1;
+		invParameterData_state.data = PARAM_FAULT_CLEAR_DATA;
+		invParameterReserved2_state.data = PARAM_CMD_RESERVED2;
+		send_group(INVERTER_PARAM_ID);
+		service_can_tx(hcan);
 	}
 
 	switch (vehicle_state)

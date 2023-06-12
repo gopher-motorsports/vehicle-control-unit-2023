@@ -59,8 +59,9 @@
 #define APPS_BRAKE_RESET_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.05 ) + APPS_MIN_TORQUE_POS_mm
 
 // ------------------------------------ APPS Correlation Check ----------------------------------
-#define APPS_CORRELATION_THRESH_mm  ( APPS_TOTAL_TRAVEL_mm * 0.1 )
+#define APPS_CORRELATION_THRESH_mm   ( APPS_TOTAL_TRAVEL_mm * 0.1 )
 #define CORRELATION_TRIP_DELAY_ms    100  // The amount of time it takes a correlation fault to take effect
+#define APPS_CORRELATION_OFFSET_mm   0.0  // The average offset of the APPSs, positive is APPS1 > APPS2
 
 // ------------------------------------ TS Current/Brake Check ----------------------------------
 #define BRAKE_TS_CURRENT_THRESH_A  14.0f  // The current limit when the brake and
@@ -80,7 +81,7 @@
 
 // ================================== TRACTIVE SYSTEM PARAMETERS ================================
 #define MOTOR_DIRECTION         1      // Motor direction; 0 is reverse, 1 is forward
-#define MAX_CMD_TORQUE_Nm       50.0f    // The maximum torque that will be commanded
+#define MAX_CMD_TORQUE_Nm       25.0f    // The maximum torque that will be commanded
 #define INVERTER_TIMEOUT_ms     100    // The time after which the vehicle will enter STARTUP
 #define INVERTER_ENABLE         0x01   // Flags to enable the inverter
 #define INVERTER_DISABLE        0x00   // Flags to disable the inverter
