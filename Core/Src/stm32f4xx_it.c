@@ -88,7 +88,25 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  // Turn off the heartbeat LED
+  HAL_GPIO_WritePin(MCU_STATUS_LED_GPIO_Port, MCU_STATUS_LED_Pin, GPIO_PIN_RESET);
+  uint32_t tim6Period = htim6.Init.Period;
+  // Reset the TIM6 timer
+  TIM6->CNT = 0;
+  for (uint32_t i = 0; i < 20; i++)
+  {
+	// Wait for some delay
+	for (uint32_t j = 0; j < 250; j++)
+	{
+	  // Wait for 1ms to elapse
+	  while (TIM6->CNT <= tim6Period/2) {}
+	  while (TIM6->CNT > tim6Period/2) {}
+	}
+	// Toggle the hardfault led
+	HAL_GPIO_TogglePin(HARDFAULT_LED_GPIO_Port, HARDFAULT_LED_Pin);
+  }
+  // Reset the MCU
+  NVIC_SystemReset();
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {

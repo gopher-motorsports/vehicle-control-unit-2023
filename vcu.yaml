@@ -22,6 +22,14 @@ buckets:
                 ADC: ADC1_IN14
                 sensor: current_sensor_1
                 samples_buffered: 1
+            pedalPosition1_percent:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
+            pedalPosition2_percent:
+                ADC: NON_ADC
+                sensor: NON_ADC
+                samples_buffered: 1
             
     low_frequency_vcu:
         frequency_hz: 100

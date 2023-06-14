@@ -28,29 +28,32 @@ boolean appsBrakeLatched_state = 0;
 
 boolean readyToDriveButtonPressed_state = 0;
 
-VEHICLE_STATE_t vehicle_state = VEHICLE_STARTUP;
+VEHICLE_STATE_t vehicle_state = VEHICLE_NO_COMMS;
+
+#define HBEAT_LED_DELAY_TIME_ms 500
+#define RTD_DEBOUNCE_TIME_ms 25
+#define SET_INV_DISABLED() do{ desiredTorque_Nm = 0; torqueLimit_Nm = MAX_CMD_TORQUE_Nm; inverter_enable_state = INVERTER_DISABLE; } while(0)
 
 // Initialization code goes here
 void init(CAN_HandleTypeDef* hcan_ptr) {
 	hcan = hcan_ptr;
 
 	init_can(GCAN1, hcan, VCU_ID, BXTYPE_SLAVE);
-
-	// TODO: Initialization code/functions
-	// TODO: Validate inverter config
-
 }
 
 void main_loop() {
-	update_RTD();
 	process_sensors();
 	process_inverter();
 	update_outputs();
 	update_cooling();
 	update_display_fault_status();
 	update_gcan_states(); // Should be after process_sensors
-	if(HAL_GetTick() % 1 == 0) {
-		HAL_GPIO_TogglePin(STATUS_R_GPIO_Port, STATUS_R_Pin);
+
+	// TODO this needs to move to the LED control function
+	static U32 last_led = 0;
+	if(HAL_GetTick() - last_led >= HBEAT_LED_DELAY_TIME_ms) {
+		HAL_GPIO_TogglePin(MCU_STATUS_LED_GPIO_Port, MCU_STATUS_LED_Pin);
+		last_led = HAL_GetTick();
 	}
 
 	// Turn off RGB
@@ -75,6 +78,21 @@ void can_buffer_handling_loop()
 }
 
 void update_gcan_states() {
+	// Log pedal position percentages
+	float pedalPos1 = 100.0*(pedalPosition1_mm.data-APPS_MIN_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm;
+	if(pedalPos1 < 0) {
+		pedalPos1 = 0;
+	} else if (pedalPos1 > 100) {
+		pedalPos1 = 100;
+	}
+	float pedalPos2 = 100.0*(pedalPosition2_mm.data-APPS_MIN_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm;
+	if(pedalPos2 < 0) {
+		pedalPos2 = 0;
+	} else if (pedalPos2 > 100) {
+		pedalPos2 = 100;
+	}
+	update_and_queue_param_float(&pedalPosition1_percent, pedalPos1);
+	update_and_queue_param_float(&pedalPosition2_percent, pedalPos2);
 	// Log BSPD sensor faults
 	update_and_queue_param_u8(&bspdPedalPosition1Fault_state,
 			HAL_GPIO_ReadPin(BSPD_APPS1_FAULT_GPIO_Port, BSPD_APPS1_FAULT_Pin) == BSPD_APPS1_FAULT);
@@ -96,7 +114,7 @@ void update_gcan_states() {
 	update_and_queue_param_u8(&vcuPedalPositionCorrelationFault_state, correlationTimer_ms > CORRELATION_TRIP_DELAY_ms);
 	update_and_queue_param_u8(&vcuPedalPositionBrakingFault_state, appsBrakeLatched_state);
 	// Requested torque
-	update_and_queue_param_u8(&vcuTorqueRequested_Nm, desiredTorque_Nm);
+	update_and_queue_param_float(&vcuTorqueRequested_Nm, desiredTorque_Nm);
 	// Cooling
 	update_and_queue_param_u8(&coolantFanPower_percent, 100*HAL_GPIO_ReadPin(FAN_GPIO_Port, FAN_Pin));
 	update_and_queue_param_u8(&coolantPumpPower_percent, 100*HAL_GPIO_ReadPin(PUMP_GPIO_Port, PUMP_Pin));
@@ -106,12 +124,12 @@ void update_gcan_states() {
 	update_and_queue_param_u8(&readyToDriveButton_state, readyToDriveButtonPressed_state);
 
 	update_and_queue_param_u8(&vcuGSenseStatus_state, HAL_GPIO_ReadPin(GSENSE_LED_GPIO_Port, GSENSE_LED_Pin));
+	// Calculate wheel speed from rpm
+	wheelSpeedRearRight_mph.data = ((motorSpeed_rpm.data * MINUTES_PER_HOUR) * WHEEL_DIAMETER_IN * MATH_PI) / (FINAL_DRIVE_RATIO * IN_PER_FT);
+	wheelSpeedFrontLeft_mph.data = wheelSpeedFrontRight_mph.data;
 }
 
 void update_cooling() {
-	// Pump should always be on at least a little bit, making sure that's the case (RESET turns the pin on)
-	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, GPIO_PIN_RESET);
-
 	// TODO: Ramp up cooling based on temperatures of the inverter and motor using PWM
 	// TODO: Set pump and fan pins to PWM
 	if(igbtATemp_C.data >= IGBT_TEMP_THRESH_C
@@ -119,25 +137,63 @@ void update_cooling() {
 			|| igbtCTemp_C.data >= IGBT_TEMP_THRESH_C
 			|| gateDriverBoardTemp_C.data >= GDB_TEMP_THRESH_C
 			|| controlBoardTemp_C.data >= CTRL_BOARD_TEMP_THRESH_C
-			|| motorTemp_C.data >= MOTOR_TEMP_THRESH_C){
-		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_RESET);
+			|| motorTemp_C.data >= MOTOR_TEMP_THRESH_C) {
+		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_ON);
+
+		// pump should always be on if there are any temps too high or if the tractive system is on
+		HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, PLM_CONTROL_ON);
 	} else {
-		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_OFF);
+
+		// check if the tractive system is on, then we want to run the pump
+		HAL_GPIO_WritePin(ACC_FAN_GPIO_Port, ACC_FAN_Pin, dcBusVoltage_V.data > 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
+		HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, dcBusVoltage_V.data > 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
 	}
 }
 
 void process_sensors() {
+
+	// read in the RTD button. This is a software low pass to make sure noise does not press the button
+	static U32 new_event_time;
+	static U8 new_event = FALSE;
+	if (!new_event)
+	{
+		// check if there is a change in polarity of the button
+		if (readyToDriveButtonPressed_state != (HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin) == RTD_BUTTON_PUSHED))
+		{
+			new_event = TRUE;
+			new_event_time = HAL_GetTick();
+		}
+	}
+	else
+	{
+		// the button change was not held long enough
+		if (readyToDriveButtonPressed_state == (HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin) == RTD_BUTTON_PUSHED))
+		{
+			new_event = FALSE;
+		}
+		else
+		{
+			// see if enough time has passed to actually call this a press
+			if (HAL_GetTick() - new_event_time >= RTD_DEBOUNCE_TIME_ms)
+			{
+				new_event = FALSE;
+				readyToDriveButtonPressed_state = !readyToDriveButtonPressed_state;
+			}
+		}
+	}
+
 	torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
 
 	// Input Validation Checks
-	if(pedalPosition1_mm.data > APPS_MAX_POS_mm
-			|| pedalPosition1_mm.data < APPS_MIN_POS_mm) {
+	if(pedalPosition1_mm.data > APPS_MAX_ERROR_POS_mm
+			|| pedalPosition1_mm.data < APPS_MIN_ERROR_POS_mm) {
 		apps1FaultTimer_ms = (apps1FaultTimer_ms > INPUT_TRIP_DELAY_ms) ? INPUT_TRIP_DELAY_ms + 1 : apps1FaultTimer_ms + 1;
 	} else {
 		apps1FaultTimer_ms = 0;
 	}
-	if(pedalPosition2_mm.data > APPS_MAX_POS_mm
-				|| pedalPosition2_mm.data < APPS_MIN_POS_mm) {
+	if(pedalPosition2_mm.data > APPS_MAX_ERROR_POS_mm
+				|| pedalPosition2_mm.data < APPS_MIN_ERROR_POS_mm) {
 		apps2FaultTimer_ms = (apps2FaultTimer_ms > INPUT_TRIP_DELAY_ms) ? INPUT_TRIP_DELAY_ms + 1 : apps2FaultTimer_ms + 1;
 	} else {
 		apps2FaultTimer_ms = 0;
@@ -183,16 +239,10 @@ void process_sensors() {
 	if(appsBrakeLatched_state) {
 		torqueLimit_Nm = 0;
 	}
-	// TODO: DO FILTERING!!!!!!!!!!!!!
+	// TODO make some hysteresis on this in order to make it less jumpy
 	if(bspdTractiveSystemBrakingFault_state.data) {
 		float tractiveSystemBrakingLimit_Nm = 0;
-		float accumulatorVoltage_V = seg1Voltage_V.data +
-							seg2Voltage_V.data +
-							seg3Voltage_V.data +
-							seg4Voltage_V.data +
-							seg5Voltage_V.data +
-							seg6Voltage_V.data +
-							seg7Voltage_V.data;
+		float accumulatorVoltage_V = dcBusVoltage_V.data;
 		if(motorSpeed_rpm.data != 0) {
 			// Calculate max torque from speed and voltage, using angular velocity (rad/s)
 			tractiveSystemBrakingLimit_Nm = (BRAKE_TS_CURRENT_THRESH_A * accumulatorVoltage_V)
@@ -208,9 +258,9 @@ void process_sensors() {
 		}
 	}
 
-	desiredTorque_Nm = ((pedalPosition1_mm.data-APPS_MIN_POS_mm)/APPS_TOTAL_TRAVEL_mm)*MAX_CMD_TORQUE_Nm;
+	desiredTorque_Nm = ((pedalPosition1_mm.data-APPS_MIN_TORQUE_POS_mm)/APPS_TOTAL_TRAVEL_mm)*MAX_CMD_TORQUE_Nm;
 
-	if(pedalPosition1_mm.data < APPS_MIN_POS_mm) {
+	if(pedalPosition1_mm.data < APPS_MIN_TORQUE_POS_mm) {
 		desiredTorque_Nm = 0;
 	}
 
@@ -224,7 +274,7 @@ void update_display_fault_status() {
 	if(amsFault_state.data) status = AMS_FAULT;
 	else if(bmsNumActiveAlerts_state.data) status = BMS_FAULT;
 	else if(vcuPedalPositionBrakingFault_state.data) status = RELEASE_PEDAL;
-	else if(bspdTractiveSystemBrakingFault_state.data || vcuBrakingClampingCurrent_state.data) status = BREAKING_FAULT;
+	else if(bspdTractiveSystemBrakingFault_state.data || vcuBrakingClampingCurrent_state.data) status = BRAKING_FAULT;
 	else if(vcuPedalPositionCorrelationFault_state.data) status = APPS_FAULT;
 	else if(bspdFault_state.data
 			|| bspdBrakePressureSensorFault_state.data
@@ -242,25 +292,51 @@ void update_display_fault_status() {
 
 
 void process_inverter() {
-	if(HAL_GetTick() - inverterState_state.info.last_rx > INVERTER_TIMEOUT_ms) {
-		vehicle_state = VEHICLE_STARTUP;
+	U8 inverter_enable_state = INVERTER_DISABLE;
+
+	// if we loose comms with the inverter we should enter no NO_COMMS state. Also include a 100ms
+	// startup time to make sure all the different systems have a chance to boot up
+	if (HAL_GetTick() <= INVERTER_TIMEOUT_ms ||
+			(HAL_GetTick() - inverterState_state.info.last_rx) > INVERTER_TIMEOUT_ms)
+	{
+		// if we have no comms, do not do the rest of this function until we have them
+		vehicle_state = VEHICLE_NO_COMMS;
+		return;
 	}
-	// Only do the state-change logic if we've actually talked with the inverter
-	if(inverterState_state.info.last_rx != 0) {
-		if(vehicle_state == VEHICLE_STARTUP && ((HAL_GetTick() - inverterState_state.info.last_rx) < INVERTER_TIMEOUT_ms)) {
+
+	// at this point we know we are receiving data from the inverter
+
+	// error out if we are in speed mode for some reason
+	if(invStatesByte4_state.data & 0x01) {
+		// TODO: ADD AN ERROR CODE IF WE ARE IN SPEED MODE
+	}
+
+	// if we ever enter lockout, make sure to go to that state to correctly handle it
+	if((invStatesByte6_state.data & INVERTER_LOCKOUT)) {
+		vehicle_state = VEHICLE_LOCKOUT;
+
+		invParameterAddress_state.data = PARAM_CMD_FAULT_CLEAR;
+		invParameterRW_state.data = PARAM_CMD_WRITE;
+		invParameterReserved1_state.data = PARAM_CMD_RESERVED1;
+		invParameterData_state.data = PARAM_FAULT_CLEAR_DATA;
+		invParameterReserved2_state.data = PARAM_CMD_RESERVED2;
+		send_group(INVERTER_PARAM_ID);
+		service_can_tx(hcan);
+	}
+
+	switch (vehicle_state)
+	{
+	case VEHICLE_NO_COMMS:
+		// wait for comms to try and exit lockout
+		if ((HAL_GetTick() - inverterState_state.info.last_rx) < INVERTER_TIMEOUT_ms)
+		{
 			vehicle_state = VEHICLE_LOCKOUT;
 		}
-		if(invStatesByte4_state.data & 0x01) {
-			// TODO: ADD AN ERROR CODE IF WE ARE IN SPEED MODE
-		}
-		// If we are in the driving state and the inverter is disabled,
-		// go to the standby state.  This has to be after the startup stuff
-		// so that this case will only be hit if the inverter is not in lockout
-		if((vehicle_state == VEHICLE_DRIVING || vehicle_state == VEHICLE_PREDRIVE)
-			&& !(invStatesByte6_state.data & INVERTER_ENABLE)) {
-			vehicle_state = VEHICLE_STANDBY;
-		}
+		SET_INV_DISABLED();
+		break;
 
+	case VEHICLE_LOCKOUT:
+		// try and exit the lockout mode of the inverter. This will be present whenever there is a fault
 		if((invStatesByte6_state.data & INVERTER_LOCKOUT)) {
 			// We're in lockout; reset faults
 			invParameterAddress_state.data = PARAM_CMD_FAULT_CLEAR;
@@ -275,79 +351,85 @@ void process_inverter() {
 			// We've exited lockout
 			vehicle_state = VEHICLE_STANDBY;
 		}
+		SET_INV_DISABLED();
+		break;
+
+	case VEHICLE_STANDBY:
+		// everything is good to go in this state, we are just waiting to enable the RTD button
+		if (brakePressureFront_psi.data > PREDRIVE_BRAKE_THRESH_psi &&
+				readyToDriveButtonPressed_state &&
+				dcBusVoltage_V.data > TS_ON_THRESHOLD_VOLTAGE_V)
+		{
+			// Button is pressed, set state to VEHICLE_PREDRIVE
+			vehicle_state = VEHICLE_PREDRIVE;
+			preDriveTimer_ms = 0;
+		}
+		SET_INV_DISABLED();
+		break;
+
+	case VEHICLE_PREDRIVE:
+		// buzz the RTD buzzer for the correct amount of time
+		if(++preDriveTimer_ms > PREDRIVE_TIME_ms) {
+			vehicle_state = VEHICLE_DRIVING;
+		}
+		SET_INV_DISABLED();
+		break;
+
+	case VEHICLE_DRIVING:
+		// let the car run as normal. Do not change desiredTorque
+		limit_motor_torque();
+		inverter_enable_state = INVERTER_ENABLE;
+		break;
+
+	default:
+		vehicle_state = VEHICLE_NO_COMMS;
+		SET_INV_DISABLED();
+		break;
 	}
 
-	if(vehicle_state == VEHICLE_DRIVING) {
-		// Send a torque command
-		torqueCmd_Nm.data = desiredTorque_Nm;
-		speedCmd_rpm.data = 0;
-		cmdDir_state.data = (U8)(MOTOR_DIRECTION > 0);
-		invCmdFlags_state.data = INVERTER_ENABLE;
-		torqueCmdLim_Nm.data = torqueLimit_Nm;
-		send_group(INVERTER_CMD_ID);
-		service_can_tx(hcan);
-	} else {
-		// Tell the inverter we don't want the motor to spin
-		// This will also attempt to exit lockout
-		torqueCmd_Nm.data = 0;
-		speedCmd_rpm.data = 0;
-		cmdDir_state.data = (U8)(MOTOR_DIRECTION > 0);
-		invCmdFlags_state.data = INVERTER_DISABLE;
-		torqueCmdLim_Nm.data = torqueLimit_Nm;
-		send_group(INVERTER_CMD_ID);
-		service_can_tx(hcan);
-	}
+	// send the torque request
+	torqueCmd_Nm.data = desiredTorque_Nm;
+	torqueCmdLim_Nm.data = torqueLimit_Nm;
+	invCmdFlags_state.data = inverter_enable_state;
+	speedCmd_rpm.data = 0;
+	cmdDir_state.data = (U8)(MOTOR_DIRECTION > 0);
+	send_group(INVERTER_CMD_ID);
+	service_can_tx(hcan);
 }
 
-void handle_CAN() {
-	// TODO: Write
+
+void limit_motor_torque()
+{
+	// TODO this is where all the fun launch and traction control will go
+
+	float new_torque_limit;
+	// right now we just want to limit torque based on back EMF to keep our
+	// current under 100A at the accumulator
+	if (motorSpeed_rpm.data > MIN_LIMIT_SPEED_rpm)
+	{
+		new_torque_limit = (dcBusVoltage_V.data * (9.593*TS_CURRENT_MAX_A)) / (motorSpeed_rpm.data);
+	}
+	if (new_torque_limit < torqueCmdLim_Nm.data) torqueCmdLim_Nm.data = new_torque_limit;
 }
 
-void check_ready_to_drive() {
-	if(brakePressureFront_psi.data > PREDRIVE_BRAKE_THRESH_psi
-			&& brakePressureRear_psi.data > PREDRIVE_BRAKE_THRESH_psi
-			&& readyToDriveButton_state.data == PREDRIVE_BUTTON_PRESSED
-			&& vehicle_state == VEHICLE_STANDBY) {
-		vehicle_state = VEHICLE_PREDRIVE;
-	}
-}
 
 void update_outputs() {
 	if(vehicle_state == VEHICLE_PREDRIVE) {
-		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, BUZZER_ON);
+		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, MOSFET_PULL_DOWN_ON);
 		update_and_queue_param_u8(&vehicleBuzzerOn_state, TRUE);
 	} else {
-		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, BUZZER_OFF);
+		HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, MOSFET_PULL_DOWN_OFF);
 		update_and_queue_param_u8(&vehicleBuzzerOn_state, FALSE);
 	}
 
-	if(brakePressureFront_psi.data > BRAKE_LIGHT_THRESH_psi
-			|| brakePressureRear_psi.data > BRAKE_LIGHT_THRESH_psi) {
-		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, BRAKE_LIGHT_ON);
+	if(brakePressureFront_psi.data > BRAKE_LIGHT_THRESH_psi) {
+		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, MOSFET_PULL_DOWN_ON);
 		update_and_queue_param_u8(&brakeLightOn_state, TRUE);
 	} else {
-		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, BRAKE_LIGHT_OFF);
+		HAL_GPIO_WritePin(BRK_LT_GPIO_Port, BRK_LT_Pin, MOSFET_PULL_DOWN_OFF);
 		update_and_queue_param_u8(&brakeLightOn_state, FALSE);
 	}
 	return;
 }
 
-void update_RTD() {
-	// Update the predrive timer
-	if(vehicle_state == VEHICLE_PREDRIVE) {
-		if(++preDriveTimer_ms > PREDRIVE_TIME_ms) {
-			vehicle_state = VEHICLE_DRIVING;
-		}
-	}
-	readyToDriveButtonPressed_state = HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin) == RTD_BUTTON_PUSHED;
-	// Forgot to assign a pin to the RTD button, using GPIO_1 for it
-	// HAL_GPIO_ReadPin is a pull up pin, so it will return 0 if the button is pressed
-	if (readyToDriveButtonPressed_state
-			&& vehicle_state == VEHICLE_STANDBY
-			&& brakePressureFront_psi.data > PREDRIVE_BRAKE_THRESH_psi
-			&& brakePressureRear_psi.data > PREDRIVE_BRAKE_THRESH_psi) {
-		// Button is pressed, set state to VEHICLE_PREDRIVE
-		vehicle_state = VEHICLE_PREDRIVE;
-		preDriveTimer_ms = 0;
-	}
-}
+// End of vcu.c
