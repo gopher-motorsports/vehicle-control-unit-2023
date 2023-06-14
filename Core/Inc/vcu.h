@@ -34,8 +34,9 @@
 // ==============================================================================================
 // ============================= TRACTIVE SYSTEM CURRENT PARAMETERS =============================
 #define TS_CURRENT_MIN_A   -85   // The minimum value of the current sensor
-#define TS_CURRENT_MAX_A   85  // The maximum value of the current sensor
-// ==============================================================================================
+#define TS_CURRENT_MAX_A   100  // The maximum value of the current sensor
+#define MIN_LIMIT_SPEED_rpm 1000 // minimum RPM that the VCU begins current limiting
+// =============================================================================================
 
 // ================================== READY TO DRIVE PARAMETERS =================================
 #define PREDRIVE_BRAKE_THRESH_psi  100  // The minimum brake pressure to enter the driving state
@@ -75,13 +76,13 @@
 #define IGBT_TEMP_THRESH_C        40.0f // Minimum IGBT temperature for cooling fan to turn on
 #define GDB_TEMP_THRESH_C         40.0f // Minimum Gate Drive Board temp for cooling fan to turn on
 #define CTRL_BOARD_TEMP_THRESH_C  40.0f // Minimum Control Board temp for cooling fan to turn on
-#define MOTOR_TEMP_THRESH_C       30.0f // Minimum Motor temperature for cooling fan to turn on
+#define MOTOR_TEMP_THRESH_C       50.0f // Minimum Motor temperature for cooling fan to turn on
 // ==============================================================================================
 
 
 // ================================== TRACTIVE SYSTEM PARAMETERS ================================
 #define MOTOR_DIRECTION         1      // Motor direction; 0 is reverse, 1 is forward
-#define MAX_CMD_TORQUE_Nm       25.0f    // The maximum torque that will be commanded
+#define MAX_CMD_TORQUE_Nm       150.0f    // The maximum torque that will be commanded
 #define INVERTER_TIMEOUT_ms     100    // The time after which the vehicle will enter STARTUP
 #define INVERTER_ENABLE         0x01   // Flags to enable the inverter
 #define INVERTER_DISABLE        0x00   // Flags to disable the inverter
@@ -156,5 +157,6 @@ void process_inverter();   // Updates vehicle state and applicable commands
 void update_outputs();     // Updates brake light and buzzer
 void update_cooling();     // Controls/updates the cooling system
 void update_display_fault_status(); 	// Check all vehicle fault messages and sends best one to display
+void limit_motor_torque();
 
 #endif /* INC_VCU_H_ */

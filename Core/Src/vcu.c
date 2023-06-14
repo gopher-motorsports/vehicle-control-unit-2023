@@ -31,6 +31,7 @@ boolean readyToDriveButtonPressed_state = 0;
 VEHICLE_STATE_t vehicle_state = VEHICLE_NO_COMMS;
 
 #define HBEAT_LED_DELAY_TIME_ms 500
+#define RTD_DEBOUNCE_TIME_ms 25
 #define SET_INV_DISABLED() do{ desiredTorque_Nm = 0; torqueLimit_Nm = MAX_CMD_TORQUE_Nm; inverter_enable_state = INVERTER_DISABLE; } while(0)
 
 // Initialization code goes here
@@ -129,9 +130,6 @@ void update_gcan_states() {
 }
 
 void update_cooling() {
-	// Pump should always be on at least a little bit, making sure that's the case (RESET turns the pin on)
-	HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, PLM_CONTROL_ON);
-
 	// TODO: Ramp up cooling based on temperatures of the inverter and motor using PWM
 	// TODO: Set pump and fan pins to PWM
 	if(igbtATemp_C.data >= IGBT_TEMP_THRESH_C
@@ -139,20 +137,51 @@ void update_cooling() {
 			|| igbtCTemp_C.data >= IGBT_TEMP_THRESH_C
 			|| gateDriverBoardTemp_C.data >= GDB_TEMP_THRESH_C
 			|| controlBoardTemp_C.data >= CTRL_BOARD_TEMP_THRESH_C
-			|| motorTemp_C.data >= MOTOR_TEMP_THRESH_C){
+			|| motorTemp_C.data >= MOTOR_TEMP_THRESH_C) {
 		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_ON);
+
+		// pump should always be on if there are any temps too high or if the tractive system is on
+		HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, PLM_CONTROL_ON);
 	} else {
 		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_OFF);
+
+		// check if the tractive system is on, then we want to run the pump
+		HAL_GPIO_WritePin(ACC_FAN_GPIO_Port, ACC_FAN_Pin, dcBusVoltage_V.data > 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
+		HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, dcBusVoltage_V.data > 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
 	}
-
-
-	HAL_GPIO_WritePin(ACC_FAN_GPIO_Port, ACC_FAN_Pin, dcBusVoltage_V.data < 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
 }
 
 void process_sensors() {
 
-	// read in the RTD button
-	readyToDriveButtonPressed_state = HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin) == RTD_BUTTON_PUSHED;
+	// read in the RTD button. This is a software low pass to make sure noise does not press the button
+	static U32 new_event_time;
+	static U8 new_event = FALSE;
+	if (!new_event)
+	{
+		// check if there is a change in polarity of the button
+		if (readyToDriveButtonPressed_state != (HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin) == RTD_BUTTON_PUSHED))
+		{
+			new_event = TRUE;
+			new_event_time = HAL_GetTick();
+		}
+	}
+	else
+	{
+		// the button change was not held long enough
+		if (readyToDriveButtonPressed_state == (HAL_GPIO_ReadPin(GPIO1_GPIO_Port, GPIO1_Pin) == RTD_BUTTON_PUSHED))
+		{
+			new_event = FALSE;
+		}
+		else
+		{
+			// see if enough time has passed to actually call this a press
+			if (HAL_GetTick() - new_event_time >= RTD_DEBOUNCE_TIME_ms)
+			{
+				new_event = FALSE;
+				readyToDriveButtonPressed_state = !readyToDriveButtonPressed_state;
+			}
+		}
+	}
 
 	torqueLimit_Nm = MAX_CMD_TORQUE_Nm;
 
@@ -328,7 +357,8 @@ void process_inverter() {
 	case VEHICLE_STANDBY:
 		// everything is good to go in this state, we are just waiting to enable the RTD button
 		if (brakePressureFront_psi.data > PREDRIVE_BRAKE_THRESH_psi &&
-				readyToDriveButtonPressed_state)
+				readyToDriveButtonPressed_state &&
+				dcBusVoltage_V.data > TS_ON_THRESHOLD_VOLTAGE_V)
 		{
 			// Button is pressed, set state to VEHICLE_PREDRIVE
 			vehicle_state = VEHICLE_PREDRIVE;
@@ -347,6 +377,7 @@ void process_inverter() {
 
 	case VEHICLE_DRIVING:
 		// let the car run as normal. Do not change desiredTorque
+		limit_motor_torque();
 		inverter_enable_state = INVERTER_ENABLE;
 		break;
 
@@ -364,6 +395,21 @@ void process_inverter() {
 	cmdDir_state.data = (U8)(MOTOR_DIRECTION > 0);
 	send_group(INVERTER_CMD_ID);
 	service_can_tx(hcan);
+}
+
+
+void limit_motor_torque()
+{
+	// TODO this is where all the fun launch and traction control will go
+
+	float new_torque_limit;
+	// right now we just want to limit torque based on back EMF to keep our
+	// current under 100A at the accumulator
+	if (motorSpeed_rpm.data > MIN_LIMIT_SPEED_rpm)
+	{
+		new_torque_limit = (dcBusVoltage_V.data * (9.593*TS_CURRENT_MAX_A)) / (motorSpeed_rpm.data);
+	}
+	if (new_torque_limit < torqueCmdLim_Nm.data) torqueCmdLim_Nm.data = new_torque_limit;
 }
 
 
