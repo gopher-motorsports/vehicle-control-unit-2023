@@ -139,6 +139,7 @@ void update_cooling() {
 			|| controlBoardTemp_C.data >= CTRL_BOARD_TEMP_THRESH_C
 			|| motorTemp_C.data >= MOTOR_TEMP_THRESH_C) {
 		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_ON);
+		HAL_GPIO_WritePin(ACC_FAN_GPIO_Port, ACC_FAN_Pin, PLM_CONTROL_ON);
 
 		// pump should always be on if there are any temps too high or if the tractive system is on
 		HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, PLM_CONTROL_ON);
@@ -146,8 +147,8 @@ void update_cooling() {
 		HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, PLM_CONTROL_OFF);
 
 		// check if the tractive system is on, then we want to run the pump
-		HAL_GPIO_WritePin(ACC_FAN_GPIO_Port, ACC_FAN_Pin, dcBusVoltage_V.data > 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
 		HAL_GPIO_WritePin(PUMP_GPIO_Port, PUMP_Pin, dcBusVoltage_V.data > 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
+		HAL_GPIO_WritePin(ACC_FAN_GPIO_Port, ACC_FAN_Pin, dcBusVoltage_V.data > 100 ? PLM_CONTROL_ON : PLM_CONTROL_OFF);
 	}
 }
 
@@ -294,15 +295,15 @@ void update_display_fault_status() {
 void process_inverter() {
 	U8 inverter_enable_state = INVERTER_DISABLE;
 
-	// if we loose comms with the inverter we should enter no NO_COMMS state. Also include a 100ms
-	// startup time to make sure all the different systems have a chance to boot up
-	if (HAL_GetTick() <= INVERTER_TIMEOUT_ms ||
-			(HAL_GetTick() - inverterState_state.info.last_rx) > INVERTER_TIMEOUT_ms)
-	{
-		// if we have no comms, do not do the rest of this function until we have them
-		vehicle_state = VEHICLE_NO_COMMS;
-		return;
-	}
+//	// if we loose comms with the inverter we should enter no NO_COMMS state. Also include a 100ms
+//	// startup time to make sure all the different systems have a chance to boot up
+//	if (HAL_GetTick() <= INVERTER_TIMEOUT_ms ||
+//			(HAL_GetTick() - inverterState_state.info.last_rx) > INVERTER_TIMEOUT_ms)
+//	{
+//		// if we have no comms, do not do the rest of this function until we have them
+//		vehicle_state = VEHICLE_NO_COMMS;
+//		return;
+//	}
 
 	// at this point we know we are receiving data from the inverter
 
